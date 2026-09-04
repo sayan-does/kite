@@ -29,7 +29,7 @@ This repo is set up for a split deploy:
 
 | Piece | Host | Why |
 |---|---|---|
-| React PWA | Vercel / Cloudflare Pages / Netlify | static Vite build |
+| React PWA | Vercel | `cd frontend && npx vercel --prod` |
 | FastAPI | Fly.io / Render (Docker) | always-on Python process |
 | Postgres + Auth | Supabase | already used by the app |
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { oauthRedirectUrl } from '../lib/authRedirect'
 import { getGitHubProviderToken, markPendingGitHubOAuth } from '../lib/githubToken'
 import { supabase } from '../lib/supabase'
 
@@ -129,7 +130,7 @@ export default function ImportStackModal({ open, onClose, onImported }: ImportSt
       provider: 'github',
       options: {
         scopes: 'read:user repo',
-        redirectTo: `${window.location.origin}/my-stack`,
+        redirectTo: oauthRedirectUrl('/my-stack'),
       },
     })
   }
