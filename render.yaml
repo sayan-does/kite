@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: kite-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    numInstances: 1
+    # Starter/standard: keep one instance. Do not scale horizontally —
+    # APScheduler and the in-memory rate limiter are per-process.
+    envVars:
+      - key: PREFILL_ON_STARTUP
+        value: "false"
+      - key: ENABLE_SCHEDULER
+        value: "true"
+    # Set remaining secrets in the Render dashboard (see docs/deploy.md).

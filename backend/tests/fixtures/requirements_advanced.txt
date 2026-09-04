@@ -1,0 +1,10 @@
+flask==2.3.0
+requests>=2.31.0
+numpy>=1.24.0,<2.0
+click~=8.1
+urllib3[secure]>=2.0
+toml>=0.10; python_version<"3.11"
+-e git+https://github.com/psf/black.git
+-r other-requirements.txt
+# just a comment
+rich

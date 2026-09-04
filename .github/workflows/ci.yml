@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_ANON_KEY: test-anon-key
+          VITE_API_BASE_URL: https://api.example.com
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      SUPABASE_URL: https://example.supabase.co
+      SUPABASE_ANON_KEY: test-anon-key
+      SUPABASE_SERVICE_ROLE_KEY: test-service-role
+      SUPABASE_JWT_SECRET: test-jwt-secret
+      SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+      GROQ_API_KEY: test-groq
+      YOUTUBE_API_KEY: test-youtube
+      EMAIL_API_KEY: test-email
+      SEARX_URL: https://searx.example
+      PREFILL_ON_STARTUP: "false"
+      ENABLE_SCHEDULER: "false"
+      CORS_ORIGINS: http://localhost:5173
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: python -c "import app.main; print('import ok')"
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t kite-api ./backend
