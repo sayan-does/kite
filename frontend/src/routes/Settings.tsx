@@ -20,6 +20,36 @@ type NotifSettings = Record<string, ChannelSettings>
 type SectionState = 'loading' | 'loaded' | 'error'
 
 const MAX_INTERESTS = 3
+const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
+
+interface Integration {
+  token: string
+  rss_url: string
+  opml_url: string
+}
+
+function CopyField({ label, value }: { label: string; value: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <div className="kite-panel">
+      <span className="text-xs kite-text-muted">{label}</span>
+      <div className="mt-1 flex items-center gap-2">
+        <code className="min-w-0 flex-1 truncate text-xs" style={{ color: 'var(--kite-text)' }}>{value}</code>
+        <button
+          type="button"
+          className="kite-btn-secondary text-xs px-3 py-1"
+          onClick={() => {
+            navigator.clipboard?.writeText(value)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 1500)
+          }}
+        >
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -37,6 +67,7 @@ export default function Settings() {
   const [deleteStatus, setDeleteStatus] = useState<'idle' | 'deleting' | 'error'>('idle')
   const [deleteError, setDeleteError] = useState('')
   const [dirty, setDirty] = useState(false)
+  const [integration, setIntegration] = useState<Integration | null>(null)
   const initialRef = useRef<string | null>(null)
   const initialTagIdsRef = useRef<number[]>([])
 
@@ -74,6 +105,13 @@ export default function Settings() {
     }
     setDirty(serialize() !== initialRef.current)
   }, [serialize])
+
+  useEffect(() => {
+    api('/me/token')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => data && setIntegration(data))
+      .catch(() => {})
+  }, [])
 
   const toggleTag = (id: number) => {
     setSelectedTagIds((prev) => {
@@ -278,6 +316,28 @@ export default function Settings() {
               </div>
             ))}
           </div>
+        )}
+      </section>
+
+      <section className="kite-section-enter mt-8" style={{ animationDelay: '190ms' }}>
+        <h3 className="kite-section-title">Integrations &amp; Export</h3>
+        <p className="text-sm kite-text-muted">
+          Read Kite in any RSS reader, or connect the Kite MCP server to your own AI client
+          (Claude Desktop/Code) using your personal token. Keep this token private.
+        </p>
+        {integration ? (
+          <div className="mt-3 space-y-2">
+            <CopyField label="Personal token" value={integration.token} />
+            <CopyField label="RSS feed URL" value={`${API_BASE}${integration.rss_url}`} />
+            <CopyField label="OPML (sources) URL" value={`${API_BASE}${integration.opml_url}`} />
+            <CopyField label="MCP server endpoint" value={`${API_BASE}/mcp`} />
+            <p className="text-xs kite-text-muted">
+              MCP: add the endpoint above with header <code>Authorization: Bearer &lt;token&gt;</code>.
+              Tools: get_feed, dependency_risk, whats_new, search_tech.
+            </p>
+          </div>
+        ) : (
+          <SectionLoading />
         )}
       </section>
 
