@@ -121,8 +121,15 @@ utility + fit + feasibility, with at least one user-installable MCP as required.
 - Migration 0015 WRITTEN (api_key cols on profiles + saved on user_article_state). NOT applied (blocked).
 - syndication.py (render_rss, render_opml) + calendars.py (google_calendar_url, render_ics) — pure,
   5 unit tests pass. Cores for feature 2 (RSS/OPML export) and feature 5 (calendar links/ICS).
-- NEXT (DB-gated, after migration applies): API-key mint/verify in auth + /me; RSS/OPML endpoints;
-  Saved endpoints+UI; Stack Risk Report; MCP server; tech-events collector+persist; <3s feed; deploy.
+- DESIGN PIVOT (unblocks most work w/o the migration): use STATELESS SIGNED TOKENS
+  (services/tokens.py, HMAC of user id) instead of a stored API-key column. So:
+    * Feature 1 (MCP) + Feature 2 (RSS/OPML endpoints): NO migration needed. ✅ unblocked.
+    * Feature 3 (Stack Risk): uses existing tables. NO migration needed.
+    * Feature 5 (events): done (backend). NO migration needed.
+    * Feature 4 (Saved): STILL needs migration 0015 (saved column) — the only truly blocked one.
+- DONE since: services/tokens.py (mint/verify, 5 tests). events backend (service+router, 4 tests).
+- NEXT: /me token endpoint; RSS/OPML endpoints (token auth); Stack Risk Report; MCP server;
+  events + settings frontend; fix stale e2e health test; <3s feed; e2e everything.
 - Auth note: interactive CLI logins fail in this non-TTY shell — use tokens (Vercel/Render) at deploy;
   Supabase migration needs DB password (dashboard reset) or SQL-editor paste of 0015.
 
