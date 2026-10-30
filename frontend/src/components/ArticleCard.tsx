@@ -28,6 +28,7 @@ interface ArticleCardProps {
   citations: Citation[]
   youtubeUrl?: string | null
   publishedAt?: string | null
+  readingMinutes?: number | null
   isResearch?: boolean
   tier?: 'raw' | 'reviewed' | null
   index?: number
@@ -112,6 +113,7 @@ export default function ArticleCard({
   citations,
   youtubeUrl,
   publishedAt,
+  readingMinutes,
   isResearch = false,
   tier = 'reviewed',
   index = 0,
@@ -221,7 +223,13 @@ export default function ArticleCard({
       <div className="kite-article-body">
         <div className="kite-article-meta">
           {dateLabel && <span>{dateLabel}</span>}
-          {dateLabel && sourceUrl && <span className="kite-article-meta-dot" />}
+          {readingMinutes ? (
+            <>
+              {dateLabel && <span className="kite-article-meta-dot" />}
+              <span>{readingMinutes} min read</span>
+            </>
+          ) : null}
+          {(dateLabel || readingMinutes) && sourceUrl && <span className="kite-article-meta-dot" />}
           {sourceUrl && (
             <a
               href={sourceUrl}

@@ -61,6 +61,14 @@ def _absolute_url(raw: str | None) -> str | None:
     return value
 
 
+def _reading_minutes(a: dict) -> int:
+    """Estimated read time from the richest available text (~200 wpm, min 1)."""
+    text = (a.get("body") or a.get("summary") or a.get("one_liner") or "").strip()
+    if not text:
+        return 1
+    return max(1, round(len(text.split()) / 200))
+
+
 def _article_payload(a: dict, disabled_types: set, *, include_body: bool = True) -> dict:
     citations = _filter_citations(a.get("citations") or [], disabled_types)
     youtube_url = a.get("youtube_url")
@@ -79,6 +87,7 @@ def _article_payload(a: dict, disabled_types: set, *, include_body: bool = True)
         "youtube_url": youtube_url,
         "url": _absolute_url(a.get("url")),
         "published_at": a.get("published_at"),
+        "reading_minutes": _reading_minutes(a),
     }
     if include_body:
         payload["body"] = a.get("body")

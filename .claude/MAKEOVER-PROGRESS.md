@@ -30,9 +30,11 @@
 - Future (noted, not done): shared pooled httpx client; batch N+1 DB writes in _persist_items
 
 ### 3. Feature expansion — agentic, kept simple
-- [ ] Pick 1–2 features aligned with project goal
-- [ ] Implement end-to-end
-- [ ] Tests
+- [x] Reading-time estimate on feed cards (derived, no schema, no new query)
+- [x] Backend (_reading_minutes + payload field) + frontend (ArticleCard meta + Discover wiring)
+- [x] Unit tests (test_reading_time.py, 5 pass); build + lint green
+- Proposed for user approval in PR (need DB migration / LLM-budget decisions — theirs to make):
+  bookmarks ("save for later"), on-demand topic TL;DR digest (agentic, uses existing LLM cascade)
 
 ### 4. Testing — e2e / integration / smoke
 - [ ] Backend test suite green

@@ -27,6 +27,7 @@ interface Article {
   citations: Citation[]
   youtube_url?: string | null
   published_at?: string | null
+  reading_minutes?: number | null
   is_research?: boolean
   tier?: 'raw' | 'reviewed' | null
   score?: number | null
@@ -599,6 +600,7 @@ export default function Discover() {
             citations={a.citations}
             youtubeUrl={a.youtube_url}
             publishedAt={a.published_at}
+            readingMinutes={a.reading_minutes}
             isResearch={Boolean(a.is_research)}
             tier={a.tier ?? 'reviewed'}
             onDismiss={handleDismiss}
