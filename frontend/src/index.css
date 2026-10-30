@@ -1940,3 +1940,76 @@ body {
   font-weight: 600;
   letter-spacing: -0.02em;
 }
+
+/* ── "Pop" accent layer: vivid gradients that draw the eye ── */
+:root {
+  --kite-primary: #7c3aed;         /* violet-600 */
+  --kite-primary-hover: #6d28d9;
+  --kite-primary-container: #7c3aed;
+  --kite-primary-soft: rgba(124, 58, 237, 0.12);
+  --kite-primary-text: #6d28d9;
+  --kite-secondary: #db2777;       /* fuchsia-600 */
+  --kite-secondary-soft: rgba(219, 39, 119, 0.12);
+  --kite-accent-interest: rgba(124, 58, 237, 0.12);
+  --kite-accent-interest-text: #6d28d9;
+  --kite-accent-gradient: linear-gradient(135deg, #7c3aed 0%, #c026d3 50%, #db2777 100%);
+  --kite-accent-gradient-soft: linear-gradient(135deg, rgba(124,58,237,0.16), rgba(219,39,119,0.16));
+}
+
+:root.dark,
+[data-theme="dark"] {
+  --kite-primary: #a78bfa;         /* bright violet on dark */
+  --kite-primary-hover: #c4b5fd;
+  --kite-primary-container: #a78bfa;
+  --kite-primary-soft: rgba(167, 139, 250, 0.18);
+  --kite-primary-text: #c4b5fd;
+  --kite-secondary: #f472b6;       /* bright pink */
+  --kite-secondary-soft: rgba(244, 114, 182, 0.18);
+  --kite-accent-interest: rgba(167, 139, 250, 0.18);
+  --kite-accent-interest-text: #c4b5fd;
+  --kite-accent-gradient: linear-gradient(135deg, #a78bfa 0%, #e879f9 50%, #f472b6 100%);
+  --kite-accent-gradient-soft: linear-gradient(135deg, rgba(167,139,250,0.22), rgba(244,114,182,0.22));
+}
+
+/* Primary button: gradient fill that pops, with a lift on hover */
+.kite-btn-primary {
+  background: var(--kite-accent-gradient);
+  color: #fff;
+  border: 1px solid transparent;
+  box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
+}
+.kite-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.07) saturate(1.05);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+}
+:root.dark .kite-btn-primary,
+[data-theme="dark"] .kite-btn-primary { color: #140b22; }
+
+/* Active nav pill + progress + featured accents ride the gradient */
+.kite-bottom-nav-item-active {
+  background: var(--kite-accent-gradient);
+  color: #fff;
+}
+:root.dark .kite-bottom-nav-item-active,
+[data-theme="dark"] .kite-bottom-nav-item-active { color: #140b22; }
+
+.kite-progress-fill { background: var(--kite-accent-gradient); }
+
+/* Featured article card gets a vivid gradient top edge */
+.kite-article-card-featured {
+  border-top: 3px solid transparent;
+  border-image: var(--kite-accent-gradient) 1;
+}
+
+/* Page-title accent rule becomes a gradient bar */
+.kite-page-title-accent {
+  border-left: 4px solid transparent;
+  border-image: var(--kite-accent-gradient) 1;
+  box-shadow: none;
+}
+
+/* Primary label pills pop */
+.kite-label-pill-primary { background: var(--kite-accent-gradient); color: #fff; }
+
+/* Selection + links lean into the vivid accent */
+::selection { background: color-mix(in srgb, var(--kite-primary) 30%, transparent); }
