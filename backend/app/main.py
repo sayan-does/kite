@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import auth, events, feed, internal, me, notifications, quiz, stack
+from app.routers import auth, events, feed, internal, mcp, me, notifications, quiz, stack
 from app.services.scheduler import run_daily
 
 logger = logging.getLogger(__name__)
@@ -61,6 +61,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(events.router)
 app.include_router(feed.router)
+app.include_router(mcp.router)
 app.include_router(internal.router)
 app.include_router(me.router)
 app.include_router(notifications.router)
