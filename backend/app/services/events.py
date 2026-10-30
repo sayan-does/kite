@@ -21,13 +21,22 @@ _cache: dict[str, tuple[float, list[dict]]] = {}
 
 
 def _coerce_date(value: Any) -> str | None:
-    """Return an ISO-8601 UTC string, accepting epoch, ISO, or [start, end]."""
+    """Return an ISO-8601 UTC string, accepting epoch (s or ms), ISO, or [start, end]."""
     if value is None or value == "":
         return None
     if isinstance(value, list) and value:
         value = value[0]
+    if isinstance(value, bool):
+        return None
     if isinstance(value, (int, float)):
-        return datetime.fromtimestamp(float(value), tz=timezone.utc).isoformat()
+        ts = float(value)
+        # developers.events uses millisecond epochs; normalize to seconds.
+        if abs(ts) > 1e11:
+            ts /= 1000.0
+        try:
+            return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
+        except (OverflowError, OSError, ValueError):
+            return None
     if isinstance(value, str):
         try:
             dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -96,8 +105,9 @@ async def fetch_tech_events(
             resp = await client.get(url, headers={"User-Agent": "KiteFeedBot/1.0"})
             resp.raise_for_status()
             events = parse_events(resp.json(), limit=200)
-    except (httpx.HTTPError, ValueError):
-        # On failure serve stale cache if present, else empty.
+    except Exception:
+        # Never surface a source/parse error to the caller: serve stale cache
+        # if present, else an empty list (the endpoint must not 500).
         return hit[1][:limit] if hit else []
     _cache[url] = (time.monotonic(), events)
     return events[:limit]

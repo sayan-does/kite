@@ -35,6 +35,18 @@ def test_parse_handles_events_wrapper_and_epoch():
     assert events[0]["title"] == "Epoch Event"
 
 
+def test_parse_handles_millisecond_epoch_and_overflow():
+    # developers.events uses millisecond epochs; must not raise OSError/overflow.
+    ms = [
+        {"name": "MS Event", "url": "https://ms.example", "date": [1772323200000, 1772409600000]},
+        {"name": "Huge", "url": "https://huge.example", "startDate": 9_999_999_999_999_999},
+    ]
+    events = parse_events(ms, now=NOW)
+    titles = [e["title"] for e in events]
+    assert "MS Event" in titles  # ms normalized to a real 2026 date
+    # the absurd value coerces to None → dropped, never raised
+
+
 def test_events_endpoint_adds_calendar_links(monkeypatch):
     async def fake_fetch(*, limit=50, force=False):
         return parse_events(SAMPLE, now=NOW)[:limit]
