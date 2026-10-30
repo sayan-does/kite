@@ -1648,192 +1648,231 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   SKEUOMORPHIC MATERIAL LAYER — Apple-inspired depth makeover
-   Appended override layer. Keeps the "Technical Archive" palette but gives
-   every surface real material: lit-from-above bevels, pressed-in wells,
-   stacked ambient shadow, glossy tactile buttons, and faint grain.
-   Token + semantic-class driven — no JSX theme-branching.
+   MODERN PRODUCT REDESIGN — Phase 2 (supersedes the skeuomorphic layer)
+   Direction drawn from top design-acclaimed product sites: Linear (crisp,
+   dark-first, hairline borders, restrained indigo accent), Stripe (clarity,
+   soft elevation), Vercel/Geist (high-contrast minimalism). Dark-first.
+   Redefines the token palette + modernizes core surfaces. Token/class driven.
    ══════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* material light response (light theme) */
-  --kite-mat-highlight: rgba(255, 255, 255, 0.78);
-  --kite-mat-highlight-soft: rgba(255, 255, 255, 0.45);
-  --kite-mat-lowlight: rgba(45, 40, 30, 0.14);
-  --kite-mat-ao-1: rgba(49, 48, 45, 0.06);
-  --kite-mat-ao-2: rgba(49, 48, 45, 0.1);
-  --kite-mat-ao-3: rgba(49, 48, 45, 0.12);
-
-  /* raised bevel: bright top lip + soft bottom shade (lit from above) */
-  --kite-bevel:
-    inset 0 1px 0 var(--kite-mat-highlight),
-    inset 0 -1.5px 2px var(--kite-mat-lowlight);
-  /* pressed-in well for inputs and recessed areas */
-  --kite-inset:
-    inset 0 2px 5px rgba(45, 40, 30, 0.16),
-    inset 0 1px 1px rgba(45, 40, 30, 0.1),
-    0 1px 0 var(--kite-mat-highlight-soft);
-  /* stacked ambient occlusion for floating material */
-  --kite-raise:
-    0 1px 1px var(--kite-mat-ao-1),
-    0 3px 6px var(--kite-mat-ao-2),
-    0 10px 24px var(--kite-mat-ao-3);
-  --kite-raise-lg:
-    0 1px 1px var(--kite-mat-ao-1),
-    0 6px 14px var(--kite-mat-ao-2),
-    0 20px 48px var(--kite-mat-ao-3);
-
-  /* faint paper/metal grain (inline SVG fractal noise, black @ ~4% alpha) */
-  --kite-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  /* Refined neutral light palette */
+  --kite-bg: #f7f8fa;
+  --kite-bg-mesh-1: rgba(91, 91, 214, 0.06);
+  --kite-bg-mesh-2: rgba(45, 127, 249, 0.05);
+  --kite-bg-mesh-3: rgba(91, 91, 214, 0.04);
+  --kite-surface-1: #ffffff;
+  --kite-surface-2: #f3f4f7;
+  --kite-surface-inset: #eef0f4;
+  --kite-surface: var(--kite-surface-1);
+  --kite-surface-solid: #ffffff;
+  --kite-surface-elevated: #ffffff;
+  --kite-border: rgba(13, 18, 28, 0.09);
+  --kite-border-strong: rgba(13, 18, 28, 0.16);
+  --kite-border-accent: rgba(91, 91, 214, 0.5);
+  --kite-text: #0b0d14;
+  --kite-text-secondary: #41474f;
+  --kite-text-muted: #6b727c;
+  --kite-primary: #5b5bd6;
+  --kite-primary-hover: #4a4ac4;
+  --kite-primary-container: #5b5bd6;
+  --kite-primary-soft: rgba(91, 91, 214, 0.1);
+  --kite-primary-text: #4a4ac4;
+  --kite-on-primary: #ffffff;
+  --kite-secondary: #2d7ff9;
+  --kite-secondary-soft: rgba(45, 127, 249, 0.1);
+  --kite-blue: #2d7ff9;
+  --kite-blue-soft: rgba(45, 127, 249, 0.1);
+  --kite-accent-stack: rgba(45, 127, 249, 0.1);
+  --kite-accent-stack-text: #1a63cc;
+  --kite-accent-interest: rgba(91, 91, 214, 0.1);
+  --kite-accent-interest-text: #4a4ac4;
+  --kite-danger: #e5484d;
+  --kite-danger-soft: rgba(229, 72, 77, 0.1);
+  --kite-success: #30a46c;
+  --kite-success-soft: rgba(48, 164, 108, 0.12);
+  --kite-shadow:
+    0 1px 2px rgba(10, 13, 18, 0.04),
+    0 2px 8px rgba(10, 13, 18, 0.06);
+  --kite-shadow-lg:
+    0 4px 12px rgba(10, 13, 18, 0.08),
+    0 16px 40px rgba(10, 13, 18, 0.1);
+  --kite-header-blur: rgba(247, 248, 250, 0.72);
+  --kite-chrome-gradient: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.86) 0%,
+    rgba(247, 248, 250, 0.72) 100%
+  );
+  --kite-glass: rgba(255, 255, 255, 0.7);
+  --kite-input-bg: #ffffff;
+  --kite-chip-bg: #ffffff;
+  --kite-chip-active-bg: rgba(91, 91, 214, 0.12);
+  --kite-spinner-track: rgba(91, 91, 214, 0.18);
+  --kite-radius: 0.625rem;
+  --kite-radius-md: 0.875rem;
+  --kite-radius-card: 1rem;
+  --kite-font-display: "Geist", "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --kite-font-body: "Geist", "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
 }
 
 :root.dark,
 [data-theme="dark"] {
-  --kite-mat-highlight: rgba(255, 255, 255, 0.1);
-  --kite-mat-highlight-soft: rgba(255, 255, 255, 0.06);
-  --kite-mat-lowlight: rgba(0, 0, 0, 0.45);
-  --kite-mat-ao-1: rgba(0, 0, 0, 0.3);
-  --kite-mat-ao-2: rgba(0, 0, 0, 0.4);
-  --kite-mat-ao-3: rgba(0, 0, 0, 0.48);
-  --kite-inset:
-    inset 0 2px 6px rgba(0, 0, 0, 0.55),
-    inset 0 1px 1px rgba(0, 0, 0, 0.4),
-    0 1px 0 var(--kite-mat-highlight-soft);
-  /* lighter grain reads better on charcoal */
-  --kite-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  /* Dark-first product palette (Linear/Raycast-ish deep near-black) */
+  --kite-bg: #0b0c0f;
+  --kite-bg-mesh-1: rgba(124, 124, 240, 0.1);
+  --kite-bg-mesh-2: rgba(80, 150, 255, 0.08);
+  --kite-bg-mesh-3: rgba(124, 124, 240, 0.07);
+  --kite-surface-1: #141518;
+  --kite-surface-2: #1c1e23;
+  --kite-surface-inset: #0e0f12;
+  --kite-surface: var(--kite-surface-1);
+  --kite-surface-solid: #16171b;
+  --kite-surface-elevated: #1c1e23;
+  --kite-border: rgba(255, 255, 255, 0.09);
+  --kite-border-strong: rgba(255, 255, 255, 0.16);
+  --kite-border-accent: rgba(124, 124, 240, 0.5);
+  --kite-text: #f4f6f8;
+  --kite-text-secondary: #b4bac2;
+  --kite-text-muted: #868d98;
+  --kite-primary: #7c7cf0;
+  --kite-primary-hover: #9a9af5;
+  --kite-primary-container: #7c7cf0;
+  --kite-primary-soft: rgba(124, 124, 240, 0.16);
+  --kite-primary-text: #b7b7f7;
+  --kite-on-primary: #0b0c0f;
+  --kite-secondary: #5096ff;
+  --kite-secondary-soft: rgba(80, 150, 255, 0.16);
+  --kite-blue: #5096ff;
+  --kite-blue-soft: rgba(80, 150, 255, 0.14);
+  --kite-accent-stack: rgba(80, 150, 255, 0.16);
+  --kite-accent-stack-text: #a9ccff;
+  --kite-accent-interest: rgba(124, 124, 240, 0.16);
+  --kite-accent-interest-text: #b7b7f7;
+  --kite-danger: #ff6369;
+  --kite-danger-soft: rgba(255, 99, 105, 0.14);
+  --kite-success: #46c88a;
+  --kite-success-soft: rgba(70, 200, 138, 0.14);
+  --kite-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 2px 10px rgba(0, 0, 0, 0.45);
+  --kite-shadow-lg:
+    0 6px 16px rgba(0, 0, 0, 0.5),
+    0 20px 48px rgba(0, 0, 0, 0.55);
+  --kite-header-blur: rgba(11, 12, 15, 0.72);
+  --kite-chrome-gradient: linear-gradient(
+    180deg,
+    rgba(20, 21, 24, 0.86) 0%,
+    rgba(11, 12, 15, 0.72) 100%
+  );
+  --kite-glass: rgba(20, 21, 24, 0.7);
+  --kite-input-bg: #0e0f12;
+  --kite-chip-bg: #16171b;
+  --kite-chip-active-bg: rgba(124, 124, 240, 0.18);
+  --kite-spinner-track: rgba(124, 124, 240, 0.22);
 }
 
-/* Material grain over the animated mesh background (behind all content) */
-.kite-app-bg {
-  background-color: var(--kite-bg);
-  background-image: var(--kite-grain);
-  background-repeat: repeat;
-}
+/* Calmer ambient background — subtle accent wash, no grain/warmth */
+.kite-app-bg { background-image: none; }
+.kite-app-bg::before,
+.kite-app-bg::after,
+.kite-app-bg-mid { opacity: 0.5; filter: blur(100px); }
 
-/* ── Raised material: cards, panels, article cards ── */
+/* Flat, crisp surfaces: hairline border + soft elevation (no rainbow border,
+   no edge-bleed glow). Overrides the Phase-0 gradient-border card system. */
 .kite-card,
 .kite-card-static,
 .kite-panel,
 .kite-article-card {
-  box-shadow: var(--kite-bevel), var(--kite-raise);
+  border: 1px solid var(--kite-border);
+  background: var(--kite-card-fill, var(--kite-surface-1));
+  box-shadow: var(--kite-shadow);
 }
+.kite-panel { --kite-card-fill: var(--kite-surface-1); }
+.kite-panel-elevated { --kite-card-fill: var(--kite-surface-2); }
+
+.kite-card::after,
+.kite-card-static::after,
+.kite-article-card::after { content: none; display: none; }
 
 .kite-card:hover,
 .kite-article-card:hover,
 .kite-card-static:hover {
-  box-shadow: var(--kite-bevel), var(--kite-raise-lg);
+  transform: translateY(-2px);
+  border-color: var(--kite-border-strong);
+  background: var(--kite-card-fill, var(--kite-surface-1));
+  box-shadow: var(--kite-shadow-lg);
 }
 
-/* glossy lit header strip on article cards */
 .kite-article-head {
-  box-shadow: inset 0 1px 0 var(--kite-mat-highlight);
+  background: var(--kite-surface-2);
+  border-bottom: 1px solid var(--kite-border);
 }
 
-/* ── Glossy tactile primary button (depresses on press) ── */
+/* Buttons: solid accent, flat, confident — product-grade */
 .kite-btn-primary {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--kite-primary) 80%, #fff) 0%,
-    var(--kite-primary) 52%,
-    var(--kite-primary-hover) 100%
-  );
-  border: 1px solid color-mix(in srgb, var(--kite-primary-hover) 70%, #000);
-  box-shadow: var(--kite-bevel), var(--kite-raise);
+  background: var(--kite-primary);
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.08);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+.kite-btn-primary:hover:not(:disabled) { background: var(--kite-primary-hover); transform: translateY(-1px); }
+.kite-btn-primary:active:not(:disabled) { transform: translateY(0) scale(0.99); box-shadow: none; }
+
+.kite-btn-secondary {
+  border: 1px solid var(--kite-border-strong);
+  color: var(--kite-text);
+  background: var(--kite-surface-1);
+  box-shadow: var(--kite-shadow);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+.kite-btn-secondary:hover:not(:disabled) {
+  background: var(--kite-surface-2);
+  border-color: var(--kite-border-strong);
+  color: var(--kite-text);
 }
 
-.kite-btn-primary:hover:not(:disabled) {
-  box-shadow: var(--kite-bevel), var(--kite-raise-lg);
-}
+.kite-icon-btn { box-shadow: var(--kite-shadow); border-radius: var(--kite-radius); }
 
-.kite-btn-primary:active:not(:disabled) {
-  box-shadow: var(--kite-inset);
-  transform: translateY(1px) scale(0.99);
-}
-
-/* secondary + icon buttons: raised chrome */
-.kite-btn-secondary,
-.kite-icon-btn {
-  box-shadow: var(--kite-bevel), var(--kite-raise);
-}
-
-.kite-btn-secondary:active:not(:disabled),
-.kite-icon-btn:active {
-  box-shadow: var(--kite-inset);
-  transform: translateY(1px) scale(0.99);
-}
-
-/* ── Chips: raised, press to inset ── */
-.kite-chip {
-  box-shadow: var(--kite-bevel), var(--kite-raise);
-}
-
-.kite-chip:hover {
-  box-shadow: var(--kite-bevel), var(--kite-raise-lg);
-}
-
-.kite-chip:active,
-.kite-chip-active {
-  box-shadow: var(--kite-inset);
-}
-
-/* ── Inputs & selects: pressed-in wells ── */
+/* Inputs: clean field + accent focus ring */
 .kite-input,
 .kite-select {
-  box-shadow: var(--kite-inset);
+  box-shadow: none;
+  border: 1px solid var(--kite-border-strong);
 }
-
 .kite-input:focus,
 .kite-select:focus {
-  box-shadow: var(--kite-inset), 0 0 0 3px var(--kite-primary-soft);
+  border-color: var(--kite-primary);
+  box-shadow: 0 0 0 3px var(--kite-primary-soft);
 }
 
-/* ── Chrome bars: lit top edge ── */
-.kite-header {
-  box-shadow: inset 0 1px 0 var(--kite-mat-highlight), 0 2px 10px var(--kite-mat-ao-2);
+/* Chips: pill, hairline, accent when active */
+.kite-chip {
+  box-shadow: var(--kite-shadow);
+  border: 1px solid var(--kite-border);
+  border-radius: 999px;
 }
+.kite-chip:hover { box-shadow: var(--kite-shadow-lg); border-color: var(--kite-border-strong); }
+.kite-chip-active { border-color: var(--kite-primary); background: var(--kite-chip-active-bg); color: var(--kite-primary-text); }
 
+/* Chrome: clean hairline, no inner bevel */
+.kite-header { box-shadow: none; border-bottom: 1px solid var(--kite-border); }
 @media (max-width: 767px) {
-  .kite-bottom-nav {
-    box-shadow: inset 0 1px 0 var(--kite-mat-highlight), 0 -2px 12px var(--kite-mat-ao-2);
-  }
+  .kite-bottom-nav { box-shadow: none; border-top: 1px solid var(--kite-border); }
 }
-
-/* active nav pill reads as a glossy raised key */
 .kite-bottom-nav-item-active {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--kite-primary-container) 78%, #fff) 0%,
-    var(--kite-primary-container) 100%
-  );
-  box-shadow: var(--kite-bevel), var(--kite-raise);
+  background: var(--kite-primary);
+  color: var(--kite-on-primary);
+  box-shadow: none;
 }
 
-/* ── Recessed surfaces: streak, quiz options, progress well ── */
-.kite-streak,
-.kite-quiz-option {
-  box-shadow: var(--kite-bevel);
-}
+/* Section/page titles: lose uppercase kicker shoutiness for product calm */
+.kite-page-kicker { letter-spacing: 0.1em; color: var(--kite-text-muted); }
 
-.kite-quiz-option-chosen,
-.kite-quiz-option-correct,
-.kite-quiz-option-wrong {
-  box-shadow: var(--kite-inset);
-}
-
-.kite-progress {
-  box-shadow: var(--kite-inset);
-}
-
-.kite-progress-fill {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
-}
-
-/* empty-state motif reads as a pressed medallion */
-.kite-empty-motif {
-  box-shadow: var(--kite-bevel), var(--kite-raise);
-}
-
-/* status + badge pills get a subtle raised lip */
+/* Status/badge pills: flat soft fills (no raised lip) */
 .kite-badge-stack,
 .kite-badge-interest,
 .kite-label-pill-primary,
@@ -1841,19 +1880,63 @@ body {
 .kite-status-release,
 .kite-status-security,
 .kite-status-breaking,
-.kite-status-buzz {
-  box-shadow: inset 0 1px 0 var(--kite-mat-highlight-soft);
+.kite-status-buzz { box-shadow: none; border-radius: 999px; }
+
+/* Modal: clean elevated sheet */
+.kite-modal-panel { box-shadow: var(--kite-shadow-lg); border: 1px solid var(--kite-border); }
+
+/* ── Mixed, stylish typography (editorial serif display + grotesk accents) ── */
+:root {
+  --kite-font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --kite-font-body: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --kite-font-accent: "Space Grotesk", "Geist", ui-sans-serif, system-ui, sans-serif;
 }
 
-/* modal sheet floats on stacked ambient material */
-.kite-modal-panel {
-  box-shadow: var(--kite-bevel), var(--kite-raise-lg);
+/* Expressive serif for the big moments */
+.kite-page-title,
+.kite-article-title,
+.kite-section-title,
+.kite-empty-title,
+.kite-brand-wordmark,
+.kite-login-card h1 {
+  font-family: var(--kite-font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .kite-btn-primary:active:not(:disabled),
-  .kite-btn-secondary:active:not(:disabled),
-  .kite-icon-btn:active {
-    transform: none !important;
-  }
+.kite-page-title {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.04;
+}
+
+.kite-article-title {
+  font-weight: 560;
+  letter-spacing: -0.01em;
+  line-height: 1.18;
+}
+
+.kite-article-card-featured .kite-article-title {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Grotesk for the small-caps structural bits → the "mixed" contrast */
+.kite-page-kicker,
+.kite-article-meta,
+.kite-label-pill,
+.kite-badge-stack,
+.kite-badge-interest,
+.kite-citation,
+.kite-btn-primary,
+.kite-btn-secondary,
+.kite-nav-link {
+  font-family: var(--kite-font-accent);
+}
+
+.kite-logo,
+.kite-brand-wordmark {
+  font-family: var(--kite-font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }

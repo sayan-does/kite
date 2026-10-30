@@ -126,6 +126,17 @@ utility + fit + feasibility, with at least one user-installable MCP as required.
 - Auth note: interactive CLI logins fail in this non-TTY shell — use tokens (Vercel/Render) at deploy;
   Supabase migration needs DB password (dashboard reset) or SQL-editor paste of 0015.
 
+## COMPLETION now also requires (user, 2026-10-31, then AFK):
+- Full Playwright e2e confirming FRONTEND + BACKEND + MIDDLEWARE all working.
+- NOTE: this + the DB-gated features cannot truly pass until the DB password is
+  unblocked (see blockers). Do NOT emit a false promise. User is AFK.
+
+## Phase-2 progress (committed) — updated
+- Feature 6 DONE: complete frontend redesign — modern product palette (dark-first,
+  Linear/Stripe/Vercel-caliber) REPLACING the skeuomorphic layer; + mixed stylish
+  typography (Fraunces serif display + Geist body + Space Grotesk accents). Build+lint green.
+- /design skill: NOT available in this environment — implemented typography directly.
+
 ## BLOCKERS (need user)
 - Migration 0015 can't apply: SUPABASE_DB_URL password is stale (auth failed; URL shape ok).
   Fix: reset DB password in Supabase dashboard → update backend/.env, OR user pastes
@@ -134,7 +145,12 @@ utility + fit + feasibility, with at least one user-installable MCP as required.
   default: .ics + add-to-calendar links (no OAuth) to keep it simple + prod-feasible.
 - [ ] Feed build < 3s (measured + verified)
 - [ ] All tests green (backend + frontend + targeted)
-- [ ] Deploy-READY (user chose "make it deploy-ready, I deploy"): Vercel + free backend
-      configs, CI, env docs, one-command/dashboard deploy path. No live deploy by me.
-- [ ] PR updated/opened → then emit <promise>KITE-PHASE2-SHIPPED</promise>
+- [ ] Feature 6 (ADDED 2026-10-31 by user): COMPLETE FRONTEND REDESIGN inspired by top
+      design-acclaimed product sites (Linear/Stripe/Vercel/Raycast/Framer). Modern, refined,
+      crisp surfaces + precise typography + subtle depth. SUPERSEDES the Phase-1 skeuomorphic
+      layer (remove it, replace with the modern product system). No DB needed.
+- [ ] Feed build < 3s (measured + verified)
+- [ ] All tests green
+- [ ] PR updated → then emit <promise>KITE-PHASE2-SHIPPED</promise>
+- DEPLOY: SKIPPED per user (2026-10-31) — dropped from completion criteria.
 - Migrations: user approved applying additive migrations to live Supabase.
