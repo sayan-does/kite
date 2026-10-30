@@ -649,6 +649,73 @@ async def get_digest(
     return {"items": page_slice, "page": page, "has_next": has_next}
 
 
+_RISK_WEIGHT = {"security": 10, "breaking": 6, "update_available": 2, "up_to_date": 0}
+
+
+def summarize_risk(items: list[dict]) -> dict:
+    """Aggregate digest items into a prioritized stack-risk report (pure)."""
+    counts = {"security": 0, "breaking": 0, "update_available": 0, "up_to_date": 0}
+    score = 0
+    for item in items:
+        status = item.get("status") or "up_to_date"
+        counts[status] = counts.get(status, 0) + 1
+        score += _RISK_WEIGHT.get(status, 0)
+
+    at_risk = sorted(
+        (i for i in items if (i.get("status") or "up_to_date") != "up_to_date"),
+        key=lambda i: (_RISK_WEIGHT.get(i.get("status") or "up_to_date", 0), i.get("version_gap") or 0),
+        reverse=True,
+    )
+
+    if counts["security"] or counts["breaking"]:
+        level = "high"
+    elif counts["update_available"]:
+        level = "medium"
+    else:
+        level = "low"
+
+    return {
+        "total": len(items),
+        "counts": counts,
+        "risk_level": level,
+        "risk_score": score,
+        "at_risk": [
+            {
+                "project_name": i.get("project_name"),
+                "ecosystem": i.get("ecosystem"),
+                "package_name": i.get("package_name"),
+                "tracked_version": i.get("tracked_version"),
+                "latest_version": i.get("latest_version"),
+                "status": i.get("status"),
+                "version_gap": i.get("version_gap"),
+                "summary": (i.get("update") or {}).get("summary"),
+            }
+            for i in at_risk
+        ],
+    }
+
+
+@router.get("/stack/risk-report")
+async def get_risk_report(user_id: str = Depends(get_current_user_id)):
+    """On-demand risk summary of the user's tracked stack.
+
+    Reuses the per-dependency digest (version gaps / security / breaking) and
+    rolls it up into counts, an overall risk level, and a prioritized list.
+    """
+    deps = (
+        supabase.table("tracked_dependencies")
+        .select("id, project_name, ecosystem, package_name, version")
+        .eq("user_id", user_id)
+        .execute()
+    )
+    if not deps.data:
+        return {"total": 0, "counts": {}, "risk_level": "none", "risk_score": 0, "at_risk": []}
+
+    disabled_types = _disabled_citation_types(user_id)
+    items = [_build_digest_item(dep, disabled_types) for dep in deps.data]
+    return summarize_risk(items)
+
+
 @router.get("/stack/packages/{ecosystem}/{package_name:path}")
 async def get_package_detail(
     ecosystem: str,
