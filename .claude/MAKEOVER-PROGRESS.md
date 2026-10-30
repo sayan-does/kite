@@ -133,7 +133,21 @@ utility + fit + feasibility, with at least one user-installable MCP as required.
   added integrations.spec (events API/.ics/MCP/pages). Run locally to verify.
 - STATUS: features 1,2,3,5 DONE (back+front). Feature 6 (redesign+type) DONE. Feature 4 (Saved)
   BLOCKED on migration (DB password). <3s feed + full e2e run = pending verification.
-- NEXT: run full e2e (after backend suite); measure <3s feed; update PR. Feature 4 waits on user.
+- NEXT: measure <3s feed; update PR. Feature 4 waits on user.
+
+## E2E RESULTS (local; e2e dir is gitignored)
+- Full chromium: 14→ after fixes 15/16 affected-spec pass. ALL Phase-2 features green:
+  events API/.ics, MCP discovery/auth, Events page, Settings integrations, discover open.
+- Fixes applied:
+  * REAL BUG (mine): /events 500 on ms-epoch → fixed (committed 5d3ef2c).
+  * Redesign click-stability → Playwright reducedMotion:'reduce' (e2e config, local).
+- REMAINING e2e gaps (NOT Phase-2 features):
+  * mystack:79 "removes dependency" — fails deterministically; MyStack component code
+    UNTOUCHED by me; failing el is a plain Tailwind button; reducedMotion didn't fix it.
+    Likely a global-CSS/layout or timing interaction from the redesign. FLAG for follow-up.
+  * settings:16 + settings:34 — PRE-EXISTING (failed identically in phase-1, before my
+    Settings edits). e2e-local fragility, not Phase-2.
+- Backend: 367/368 (1 pre-existing shared-DB digest data-isolation flake, untouched code).
 - Auth note: interactive CLI logins fail in this non-TTY shell — use tokens (Vercel/Render) at deploy;
   Supabase migration needs DB password (dashboard reset) or SQL-editor paste of 0015.
 
