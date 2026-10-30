@@ -259,7 +259,7 @@ export default function ProjectAccordionRow({
             </button>
           </form>
         ) : (
-          <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          <div className="flex min-w-0 basis-full items-center gap-1.5 sm:basis-auto sm:flex-1">
             <button
               type="button"
               className="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left"
