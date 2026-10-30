@@ -127,9 +127,13 @@ utility + fit + feasibility, with at least one user-installable MCP as required.
     * Feature 3 (Stack Risk): uses existing tables. NO migration needed.
     * Feature 5 (events): done (backend). NO migration needed.
     * Feature 4 (Saved): STILL needs migration 0015 (saved column) — the only truly blocked one.
-- DONE since: services/tokens.py (mint/verify, 5 tests). events backend (service+router, 4 tests).
-- NEXT: /me token endpoint; RSS/OPML endpoints (token auth); Stack Risk Report; MCP server;
-  events + settings frontend; fix stale e2e health test; <3s feed; e2e everything.
+- DONE: tokens (5 tests); events backend (4); RSS/OPML+/me/token (5); Stack Risk (4);
+  MCP server (7); Events page+nav; Settings integrations section. Frontend build+lint green.
+- e2e (dir is GITIGNORED → local only, not committed/in PR): fixed stale health assertion;
+  added integrations.spec (events API/.ics/MCP/pages). Run locally to verify.
+- STATUS: features 1,2,3,5 DONE (back+front). Feature 6 (redesign+type) DONE. Feature 4 (Saved)
+  BLOCKED on migration (DB password). <3s feed + full e2e run = pending verification.
+- NEXT: run full e2e (after backend suite); measure <3s feed; update PR. Feature 4 waits on user.
 - Auth note: interactive CLI logins fail in this non-TTY shell — use tokens (Vercel/Render) at deploy;
   Supabase migration needs DB password (dashboard reset) or SQL-editor paste of 0015.
 
