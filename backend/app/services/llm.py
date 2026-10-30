@@ -175,8 +175,28 @@ def clean_json_text(raw: str) -> str:
     return text.strip()
 
 
-def parse_json_response(raw: str) -> dict | None:
-    cleaned = clean_json_text(raw)
+def content_to_text(raw) -> str:
+    """Normalize a LangChain message's ``content`` to plain text.
+
+    Chat models may return ``content`` as a str or as a list of content-block
+    dicts (e.g. ``[{"type": "text", "text": "..."}]``). Passing the raw list to
+    the regex-based cleaners raises ``expected string or bytes-like object``.
+    """
+    if isinstance(raw, str):
+        return raw
+    if isinstance(raw, list):
+        parts: list[str] = []
+        for block in raw:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict):
+                parts.append(str(block.get("text") or block.get("content") or ""))
+        return "".join(parts)
+    return str(raw or "")
+
+
+def parse_json_response(raw) -> dict | None:
+    cleaned = clean_json_text(content_to_text(raw))
     if not cleaned:
         return None
     try:

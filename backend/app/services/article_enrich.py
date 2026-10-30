@@ -13,21 +13,19 @@ from app.services.llm import BudgetExhausted, budget, for_role, parse_json_respo
 
 logger = logging.getLogger(__name__)
 
-MIN_ARTICULATED_LEN = 100
-
-
 def needs_enrichment(article: dict) -> bool:
-    """True when the card lacks a substantive AI-written body."""
+    """True when the card lacks a substantive AI-written body.
+
+    A ``reviewed`` card has already been through the summarize pass, so it is
+    trusted unless its body is missing or merely echoes the one-liner (a stub
+    that never received a real articulated summary). A raw card always needs it.
+    """
     tier = article.get("tier") or "raw"
-    body = (article.get("body") or "").strip()
-    one_liner = (article.get("one_liner") or article.get("summary") or "").strip()
     if tier == "raw":
         return True
-    if len(body) < MIN_ARTICULATED_LEN:
-        return True
-    if body == one_liner:
-        return True
-    return False
+    body = (article.get("body") or "").strip()
+    one_liner = (article.get("one_liner") or article.get("summary") or "").strip()
+    return not body or body == one_liner
 
 
 async def summarize_article(article: dict, *, use_budget: bool = True) -> dict | None:

@@ -20,10 +20,14 @@
 - [ ] Visual screenshot check (Playwright) — do in testing workstream
 
 ### 2. Scraping architecture — faster + prod-feasible
-- [ ] Map current collectors + feed pipeline + scheduler
-- [ ] Identify bottlenecks (sync vs async, serial fetch, caching, timeouts)
-- [ ] Implement improvements (concurrency, caching, resilience)
-- [ ] Verify with tests
+- [x] Map current collectors + feed pipeline + scheduler
+- [x] Identify bottlenecks (serial feed loop; global-lock throttle serialized all domains)
+- [x] Concurrent feed collection via asyncio.gather + semaphore (COLLECT_MAX_CONCURRENCY now real)
+- [x] Fixed _wait_for_domain holding global lock during sleep (defeated concurrency)
+- [x] Bonus prod bugfixes: needs_enrichment no longer re-enriches short reviewed bodies;
+      parse_json_response hardened against list-shaped LLM content (the `got 'list'` crash)
+- [x] Verify with tests (67 targeted pass incl. llm cascade + pipeline)
+- Future (noted, not done): shared pooled httpx client; batch N+1 DB writes in _persist_items
 
 ### 3. Feature expansion — agentic, kept simple
 - [ ] Pick 1–2 features aligned with project goal
