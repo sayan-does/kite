@@ -3,7 +3,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from app.auth import get_current_user_id
@@ -13,6 +14,8 @@ from app.services import feed_jobs
 from app.services.article_enrich import fallback_payload, needs_enrichment, summarize_article
 from app.services.feed_pipeline import run_fast_cycle
 from app.services.rate_limit import check_rate_limit
+from app.services.syndication import render_rss
+from app.services.tokens import verify_token
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -494,3 +497,35 @@ async def update_feed_state(
         row, on_conflict="user_id, kb_article_id"
     ).execute()
     return {"ok": True}
+
+
+@router.get("/feed.rss")
+async def feed_rss(request: Request, token: str = Query(..., description="Personal Kite token")):
+    """Personal RSS 2.0 feed, authenticated by a stateless signed token.
+
+    Lets a user read their Kite feed in any RSS reader without logging in.
+    """
+    user_id = verify_token(token)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+
+    disabled = _disabled_citation_types(user_id)
+    page = _kb_feed_page(user_id, None, 1, disabled, include_body=False)
+    base = str(request.base_url).rstrip("/")
+    items = [
+        {
+            "title": a.get("title"),
+            "url": a.get("url") or "",
+            "summary": a.get("one_liner") or a.get("summary") or "",
+            "published_at": a.get("published_at"),
+        }
+        for a in page["articles"]
+    ]
+    xml = render_rss(
+        title="Kite — your tech feed",
+        link=base or "https://kite.app",
+        description="Your personalized Kite tech feed",
+        self_url=f"{base}/feed.rss?token={token}" if base else None,
+        items=items,
+    )
+    return Response(content=xml, media_type="application/rss+xml; charset=utf-8")

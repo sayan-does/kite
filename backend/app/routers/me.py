@@ -3,14 +3,17 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from fastapi import Depends as depends
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from app.agents.discovery.graph import run_discovery_for_tag, run_discovery_for_user
 from app.auth import get_current_user_id
 from app.config import settings
 from app.db import supabase
+from app.services.syndication import render_opml
+from app.services.tokens import mint_token, verify_token
 
 router = APIRouter()
 
@@ -29,6 +32,49 @@ async def get_me(user_id: str = depends(get_current_user_id)):
     if not result.data:
         return {"id": user_id, "created_at": None}
     return result.data[0]
+
+
+@router.get("/me/token")
+async def get_me_token(user_id: str = depends(get_current_user_id)):
+    """Mint the user's personal token for the MCP server + RSS feed.
+
+    Deterministic (same token each call). Paste it as the Kite API key in an MCP
+    client, or use the ready-made RSS/OPML URLs.
+    """
+    token = mint_token(user_id)
+    return {
+        "token": token,
+        "rss_url": f"/feed.rss?token={token}",
+        "opml_url": f"/me/sources.opml?token={token}",
+        "mcp_hint": "Add this as your Kite API key when connecting the Kite MCP server.",
+    }
+
+
+@router.get("/me/sources.opml")
+async def sources_opml(token: str = Query(..., description="Personal Kite token")):
+    """OPML export of the user's feed sources (importable into any RSS reader)."""
+    user_id = verify_token(token)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+
+    interests = supabase.table("user_interests").select("tag_id").eq("user_id", user_id).execute().data or []
+    tag_ids = [r["tag_id"] for r in interests if r.get("tag_id")]
+    topics: list[str] = []
+    if tag_ids:
+        tags = supabase.table("interest_tags").select("name").in_("id", tag_ids).execute().data or []
+        topics = [t["name"] for t in tags if t.get("name")]
+
+    query = supabase.table("source_feeds").select("url, topic, kind").eq("enabled", True)
+    if topics:
+        query = query.in_("topic", topics)
+    feeds = query.execute().data or []
+    sources = [
+        {"title": f.get("topic") or f.get("url"), "url": f.get("url")}
+        for f in feeds
+        if f.get("url")
+    ]
+    opml = render_opml(title="Kite sources", sources=sources)
+    return Response(content=opml, media_type="text/x-opml; charset=utf-8")
 
 
 @router.get("/me/interests")
