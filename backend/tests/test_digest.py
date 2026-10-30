@@ -152,6 +152,9 @@ def kb_digest_user():
 
 
 def _insert_kb_digest_article(title: str, fetched_at: str):
+    # reviewed + high score so these seeds participate in the digest exactly like
+    # real collected articles (the digest prefers reviewed-tier and ranks by
+    # score via get_user_feed); otherwise shared live data crowds them out.
     return supabase.table("kb_articles").insert({
         "topic": "Frontend",
         "topic_kind": "interest",
@@ -162,6 +165,9 @@ def _insert_kb_digest_article(title: str, fetched_at: str):
         "source_type": "blog",
         "url": f"https://example.com/digest-{uuid.uuid4().hex[:8]}",
         "fetched_at": fetched_at,
+        "tier": "reviewed",
+        "status": "active",
+        "score": 100000,
     }).execute().data[0]
 
 
