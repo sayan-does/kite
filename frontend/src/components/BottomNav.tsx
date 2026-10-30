@@ -4,6 +4,7 @@ const tabs = [
   { path: '/discover', label: 'Discover', icon: DiscoverIcon },
   { path: '/my-stack', label: 'Stack', icon: StackIcon },
   { path: '/events', label: 'Events', icon: EventsIcon },
+  { path: '/saved', label: 'Saved', icon: SavedIcon },
   { path: '/settings', label: 'Settings', icon: SettingsIcon },
 ]
 
@@ -50,6 +51,14 @@ function EventsIcon({ active }: { active: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.25 : 1.75}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  )
+}
+
+function SavedIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={active ? 2 : 1.75}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 4h12a1 1 0 011 1v15l-7-4-7 4V5a1 1 0 011-1z" />
     </svg>
   )
 }

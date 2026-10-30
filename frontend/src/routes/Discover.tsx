@@ -469,6 +469,14 @@ export default function Discover() {
     }
   }, [])
 
+  const handleToggleSave = useCallback(async (articleId: string, saved: boolean) => {
+    try {
+      await updateFeedState(articleId, { saved })
+    } catch {
+      // Optimistic; the card already reflects the new state.
+    }
+  }, [])
+
   const handleExpand = useCallback(async (articleId: string) => {
     try {
       const res = await api(`/feed/articles/${articleId}`)
@@ -605,6 +613,7 @@ export default function Discover() {
             tier={a.tier ?? 'reviewed'}
             onDismiss={handleDismiss}
             onRead={handleRead}
+            onToggleSave={handleToggleSave}
             onExpand={handleExpand}
           />
         ))}

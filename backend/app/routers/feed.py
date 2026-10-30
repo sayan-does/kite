@@ -36,6 +36,7 @@ class FeedStateUpdate(BaseModel):
     seen: Optional[bool] = None
     read: Optional[bool] = None
     dismissed: Optional[bool] = None
+    saved: Optional[bool] = None
 
 
 @router.get("/interest-tags")
@@ -474,17 +475,25 @@ async def update_feed_state(
     if not article_resp.data:
         raise HTTPException(status_code=404, detail="Article not found")
 
-    if body.seen is None and body.read is None and body.dismissed is None:
+    if body.seen is None and body.read is None and body.dismissed is None and body.saved is None:
         raise HTTPException(status_code=400, detail="At least one state field required")
 
     existing_resp = (
         supabase.table("user_article_state")
-        .select("seen, read, dismissed")
+        .select("seen, read, dismissed, saved, saved_at")
         .eq("user_id", user_id)
         .eq("kb_article_id", kb_article_id)
         .execute()
     )
     prev = existing_resp.data[0] if existing_resp.data else {}
+
+    saved = body.saved if body.saved is not None else prev.get("saved", False)
+    if body.saved is True:
+        saved_at = datetime.now(timezone.utc).isoformat()
+    elif body.saved is False:
+        saved_at = None
+    else:
+        saved_at = prev.get("saved_at")
 
     row = {
         "user_id": user_id,
@@ -492,11 +501,39 @@ async def update_feed_state(
         "seen": body.seen if body.seen is not None else prev.get("seen", False),
         "read": body.read if body.read is not None else prev.get("read", False),
         "dismissed": body.dismissed if body.dismissed is not None else prev.get("dismissed", False),
+        "saved": saved,
+        "saved_at": saved_at,
     }
     supabase.table("user_article_state").upsert(
         row, on_conflict="user_id, kb_article_id"
     ).execute()
     return {"ok": True}
+
+
+@router.get("/feed/saved")
+async def get_saved_feed(user_id: str = Depends(get_current_user_id)):
+    """List the user's saved (read-later) articles, newest-saved first."""
+    states = (
+        supabase.table("user_article_state")
+        .select("kb_article_id, saved_at")
+        .eq("user_id", user_id)
+        .eq("saved", True)
+        .order("saved_at", desc=True)
+        .execute()
+        .data
+        or []
+    )
+    ids = [s["kb_article_id"] for s in states]
+    if not ids:
+        return {"articles": []}
+
+    rows = supabase.table("kb_articles").select("*").in_("id", ids).execute().data or []
+    by_id = {r["id"]: r for r in rows}
+    disabled = _disabled_citation_types(user_id)
+    ordered = [by_id[i] for i in ids if i in by_id]
+    for a in ordered:
+        a["source"] = a.get("topic_kind")
+    return {"articles": [_article_payload(a, disabled, include_body=False) for a in ordered]}
 
 
 @router.get("/feed.rss")
