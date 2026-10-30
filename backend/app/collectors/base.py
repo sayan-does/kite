@@ -83,13 +83,22 @@ def canonicalize_url(raw: str | None) -> str | None:
 
 
 async def _wait_for_domain(domain: str) -> None:
+    """Throttle each domain to >= MIN_DOMAIN_INTERVAL apart without blocking others.
+
+    The slot is *reserved* under the lock (bumping the domain's next-allowed time),
+    then the sleep happens outside it. Holding the lock across the sleep would
+    serialize every domain on one global lock and defeat concurrent collection.
+    """
     async with _domain_lock:
         now = time.monotonic()
-        last = _domain_last_request.get(domain, 0.0)
-        wait = MIN_DOMAIN_INTERVAL - (now - last)
-        if wait > 0:
-            await asyncio.sleep(wait)
-        _domain_last_request[domain] = time.monotonic()
+        scheduled = max(now, _domain_last_request.get(domain, 0.0) + MIN_DOMAIN_INTERVAL)
+        # First hit on a fresh domain schedules immediately (now), not now+interval.
+        if domain not in _domain_last_request:
+            scheduled = now
+        _domain_last_request[domain] = scheduled
+    delay = scheduled - time.monotonic()
+    if delay > 0:
+        await asyncio.sleep(delay)
 
 
 def _parse_cache_control(value: str | None) -> int | None:

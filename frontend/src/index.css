@@ -1646,3 +1646,374 @@ body {
     transform: none !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   MODERN PRODUCT REDESIGN — Phase 2 (supersedes the skeuomorphic layer)
+   Direction drawn from top design-acclaimed product sites: Linear (crisp,
+   dark-first, hairline borders, restrained indigo accent), Stripe (clarity,
+   soft elevation), Vercel/Geist (high-contrast minimalism). Dark-first.
+   Redefines the token palette + modernizes core surfaces. Token/class driven.
+   ══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Refined neutral light palette */
+  --kite-bg: #f7f8fa;
+  --kite-bg-mesh-1: rgba(91, 91, 214, 0.06);
+  --kite-bg-mesh-2: rgba(45, 127, 249, 0.05);
+  --kite-bg-mesh-3: rgba(91, 91, 214, 0.04);
+  --kite-surface-1: #ffffff;
+  --kite-surface-2: #f3f4f7;
+  --kite-surface-inset: #eef0f4;
+  --kite-surface: var(--kite-surface-1);
+  --kite-surface-solid: #ffffff;
+  --kite-surface-elevated: #ffffff;
+  --kite-border: rgba(13, 18, 28, 0.09);
+  --kite-border-strong: rgba(13, 18, 28, 0.16);
+  --kite-border-accent: rgba(91, 91, 214, 0.5);
+  --kite-text: #0b0d14;
+  --kite-text-secondary: #41474f;
+  --kite-text-muted: #6b727c;
+  --kite-primary: #5b5bd6;
+  --kite-primary-hover: #4a4ac4;
+  --kite-primary-container: #5b5bd6;
+  --kite-primary-soft: rgba(91, 91, 214, 0.1);
+  --kite-primary-text: #4a4ac4;
+  --kite-on-primary: #ffffff;
+  --kite-secondary: #2d7ff9;
+  --kite-secondary-soft: rgba(45, 127, 249, 0.1);
+  --kite-blue: #2d7ff9;
+  --kite-blue-soft: rgba(45, 127, 249, 0.1);
+  --kite-accent-stack: rgba(45, 127, 249, 0.1);
+  --kite-accent-stack-text: #1a63cc;
+  --kite-accent-interest: rgba(91, 91, 214, 0.1);
+  --kite-accent-interest-text: #4a4ac4;
+  --kite-danger: #e5484d;
+  --kite-danger-soft: rgba(229, 72, 77, 0.1);
+  --kite-success: #30a46c;
+  --kite-success-soft: rgba(48, 164, 108, 0.12);
+  --kite-shadow:
+    0 1px 2px rgba(10, 13, 18, 0.04),
+    0 2px 8px rgba(10, 13, 18, 0.06);
+  --kite-shadow-lg:
+    0 4px 12px rgba(10, 13, 18, 0.08),
+    0 16px 40px rgba(10, 13, 18, 0.1);
+  --kite-header-blur: rgba(247, 248, 250, 0.72);
+  --kite-chrome-gradient: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.86) 0%,
+    rgba(247, 248, 250, 0.72) 100%
+  );
+  --kite-glass: rgba(255, 255, 255, 0.7);
+  --kite-input-bg: #ffffff;
+  --kite-chip-bg: #ffffff;
+  --kite-chip-active-bg: rgba(91, 91, 214, 0.12);
+  --kite-spinner-track: rgba(91, 91, 214, 0.18);
+  --kite-radius: 0.625rem;
+  --kite-radius-md: 0.875rem;
+  --kite-radius-card: 1rem;
+  --kite-font-display: "Geist", "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --kite-font-body: "Geist", "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root.dark,
+[data-theme="dark"] {
+  /* Dark-first product palette (Linear/Raycast-ish deep near-black) */
+  --kite-bg: #0b0c0f;
+  --kite-bg-mesh-1: rgba(124, 124, 240, 0.1);
+  --kite-bg-mesh-2: rgba(80, 150, 255, 0.08);
+  --kite-bg-mesh-3: rgba(124, 124, 240, 0.07);
+  --kite-surface-1: #141518;
+  --kite-surface-2: #1c1e23;
+  --kite-surface-inset: #0e0f12;
+  --kite-surface: var(--kite-surface-1);
+  --kite-surface-solid: #16171b;
+  --kite-surface-elevated: #1c1e23;
+  --kite-border: rgba(255, 255, 255, 0.09);
+  --kite-border-strong: rgba(255, 255, 255, 0.16);
+  --kite-border-accent: rgba(124, 124, 240, 0.5);
+  --kite-text: #f4f6f8;
+  --kite-text-secondary: #b4bac2;
+  --kite-text-muted: #868d98;
+  --kite-primary: #7c7cf0;
+  --kite-primary-hover: #9a9af5;
+  --kite-primary-container: #7c7cf0;
+  --kite-primary-soft: rgba(124, 124, 240, 0.16);
+  --kite-primary-text: #b7b7f7;
+  --kite-on-primary: #0b0c0f;
+  --kite-secondary: #5096ff;
+  --kite-secondary-soft: rgba(80, 150, 255, 0.16);
+  --kite-blue: #5096ff;
+  --kite-blue-soft: rgba(80, 150, 255, 0.14);
+  --kite-accent-stack: rgba(80, 150, 255, 0.16);
+  --kite-accent-stack-text: #a9ccff;
+  --kite-accent-interest: rgba(124, 124, 240, 0.16);
+  --kite-accent-interest-text: #b7b7f7;
+  --kite-danger: #ff6369;
+  --kite-danger-soft: rgba(255, 99, 105, 0.14);
+  --kite-success: #46c88a;
+  --kite-success-soft: rgba(70, 200, 138, 0.14);
+  --kite-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 2px 10px rgba(0, 0, 0, 0.45);
+  --kite-shadow-lg:
+    0 6px 16px rgba(0, 0, 0, 0.5),
+    0 20px 48px rgba(0, 0, 0, 0.55);
+  --kite-header-blur: rgba(11, 12, 15, 0.72);
+  --kite-chrome-gradient: linear-gradient(
+    180deg,
+    rgba(20, 21, 24, 0.86) 0%,
+    rgba(11, 12, 15, 0.72) 100%
+  );
+  --kite-glass: rgba(20, 21, 24, 0.7);
+  --kite-input-bg: #0e0f12;
+  --kite-chip-bg: #16171b;
+  --kite-chip-active-bg: rgba(124, 124, 240, 0.18);
+  --kite-spinner-track: rgba(124, 124, 240, 0.22);
+}
+
+/* Calmer ambient background — subtle accent wash, no grain/warmth */
+.kite-app-bg { background-image: none; }
+.kite-app-bg::before,
+.kite-app-bg::after,
+.kite-app-bg-mid { opacity: 0.5; filter: blur(100px); }
+
+/* Flat, crisp surfaces: hairline border + soft elevation (no rainbow border,
+   no edge-bleed glow). Overrides the Phase-0 gradient-border card system. */
+.kite-card,
+.kite-card-static,
+.kite-panel,
+.kite-article-card {
+  border: 1px solid var(--kite-border);
+  background: var(--kite-card-fill, var(--kite-surface-1));
+  box-shadow: var(--kite-shadow);
+}
+.kite-panel { --kite-card-fill: var(--kite-surface-1); }
+.kite-panel-elevated { --kite-card-fill: var(--kite-surface-2); }
+
+.kite-card::after,
+.kite-card-static::after,
+.kite-article-card::after { content: none; display: none; }
+
+.kite-card:hover,
+.kite-article-card:hover,
+.kite-card-static:hover {
+  transform: translateY(-2px);
+  border-color: var(--kite-border-strong);
+  background: var(--kite-card-fill, var(--kite-surface-1));
+  box-shadow: var(--kite-shadow-lg);
+}
+
+.kite-article-head {
+  background: var(--kite-surface-2);
+  border-bottom: 1px solid var(--kite-border);
+}
+
+/* Buttons: solid accent, flat, confident — product-grade */
+.kite-btn-primary {
+  background: var(--kite-primary);
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.08);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+.kite-btn-primary:hover:not(:disabled) { background: var(--kite-primary-hover); transform: translateY(-1px); }
+.kite-btn-primary:active:not(:disabled) { transform: translateY(0) scale(0.99); box-shadow: none; }
+
+.kite-btn-secondary {
+  border: 1px solid var(--kite-border-strong);
+  color: var(--kite-text);
+  background: var(--kite-surface-1);
+  box-shadow: var(--kite-shadow);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+.kite-btn-secondary:hover:not(:disabled) {
+  background: var(--kite-surface-2);
+  border-color: var(--kite-border-strong);
+  color: var(--kite-text);
+}
+
+.kite-icon-btn { box-shadow: var(--kite-shadow); border-radius: var(--kite-radius); }
+
+/* Inputs: clean field + accent focus ring */
+.kite-input,
+.kite-select {
+  box-shadow: none;
+  border: 1px solid var(--kite-border-strong);
+}
+.kite-input:focus,
+.kite-select:focus {
+  border-color: var(--kite-primary);
+  box-shadow: 0 0 0 3px var(--kite-primary-soft);
+}
+
+/* Chips: pill, hairline, accent when active */
+.kite-chip {
+  box-shadow: var(--kite-shadow);
+  border: 1px solid var(--kite-border);
+  border-radius: 999px;
+}
+.kite-chip:hover { box-shadow: var(--kite-shadow-lg); border-color: var(--kite-border-strong); }
+.kite-chip-active { border-color: var(--kite-primary); background: var(--kite-chip-active-bg); color: var(--kite-primary-text); }
+
+/* Chrome: clean hairline, no inner bevel */
+.kite-header { box-shadow: none; border-bottom: 1px solid var(--kite-border); }
+@media (max-width: 767px) {
+  .kite-bottom-nav { box-shadow: none; border-top: 1px solid var(--kite-border); }
+}
+.kite-bottom-nav-item-active {
+  background: var(--kite-primary);
+  color: var(--kite-on-primary);
+  box-shadow: none;
+}
+
+/* Section/page titles: lose uppercase kicker shoutiness for product calm */
+.kite-page-kicker { letter-spacing: 0.1em; color: var(--kite-text-muted); }
+
+/* Status/badge pills: flat soft fills (no raised lip) */
+.kite-badge-stack,
+.kite-badge-interest,
+.kite-label-pill-primary,
+.kite-status-up_to_date,
+.kite-status-release,
+.kite-status-security,
+.kite-status-breaking,
+.kite-status-buzz { box-shadow: none; border-radius: 999px; }
+
+/* Modal: clean elevated sheet */
+.kite-modal-panel { box-shadow: var(--kite-shadow-lg); border: 1px solid var(--kite-border); }
+
+/* ── Mixed, stylish typography (editorial serif display + grotesk accents) ── */
+:root {
+  --kite-font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --kite-font-body: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --kite-font-accent: "Space Grotesk", "Geist", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Expressive serif for the big moments */
+.kite-page-title,
+.kite-article-title,
+.kite-section-title,
+.kite-empty-title,
+.kite-brand-wordmark,
+.kite-login-card h1 {
+  font-family: var(--kite-font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
+}
+
+.kite-page-title {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.04;
+}
+
+.kite-article-title {
+  font-weight: 560;
+  letter-spacing: -0.01em;
+  line-height: 1.18;
+}
+
+.kite-article-card-featured .kite-article-title {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Grotesk for the small-caps structural bits → the "mixed" contrast */
+.kite-page-kicker,
+.kite-article-meta,
+.kite-label-pill,
+.kite-badge-stack,
+.kite-badge-interest,
+.kite-citation {
+  font-family: var(--kite-font-accent);
+}
+/* Buttons/nav stay in the UI body font (Geist): narrower + conventional, and
+   keeps dense toolbars from overflowing on small viewports. */
+.kite-btn-primary,
+.kite-btn-secondary,
+.kite-nav-link {
+  font-family: var(--kite-font-body);
+}
+
+.kite-logo,
+.kite-brand-wordmark {
+  font-family: var(--kite-font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* ── "Pop" accent layer: vivid gradients that draw the eye ── */
+:root {
+  --kite-primary: #7c3aed;         /* violet-600 */
+  --kite-primary-hover: #6d28d9;
+  --kite-primary-container: #7c3aed;
+  --kite-primary-soft: rgba(124, 58, 237, 0.12);
+  --kite-primary-text: #6d28d9;
+  --kite-secondary: #db2777;       /* fuchsia-600 */
+  --kite-secondary-soft: rgba(219, 39, 119, 0.12);
+  --kite-accent-interest: rgba(124, 58, 237, 0.12);
+  --kite-accent-interest-text: #6d28d9;
+  --kite-accent-gradient: linear-gradient(135deg, #7c3aed 0%, #c026d3 50%, #db2777 100%);
+  --kite-accent-gradient-soft: linear-gradient(135deg, rgba(124,58,237,0.16), rgba(219,39,119,0.16));
+}
+
+:root.dark,
+[data-theme="dark"] {
+  --kite-primary: #a78bfa;         /* bright violet on dark */
+  --kite-primary-hover: #c4b5fd;
+  --kite-primary-container: #a78bfa;
+  --kite-primary-soft: rgba(167, 139, 250, 0.18);
+  --kite-primary-text: #c4b5fd;
+  --kite-secondary: #f472b6;       /* bright pink */
+  --kite-secondary-soft: rgba(244, 114, 182, 0.18);
+  --kite-accent-interest: rgba(167, 139, 250, 0.18);
+  --kite-accent-interest-text: #c4b5fd;
+  --kite-accent-gradient: linear-gradient(135deg, #a78bfa 0%, #e879f9 50%, #f472b6 100%);
+  --kite-accent-gradient-soft: linear-gradient(135deg, rgba(167,139,250,0.22), rgba(244,114,182,0.22));
+}
+
+/* Primary button: gradient fill that pops, with a lift on hover */
+.kite-btn-primary {
+  background: var(--kite-accent-gradient);
+  color: #fff;
+  border: 1px solid transparent;
+  box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
+}
+.kite-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.07) saturate(1.05);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+}
+:root.dark .kite-btn-primary,
+[data-theme="dark"] .kite-btn-primary { color: #140b22; }
+
+/* Active nav pill + progress + featured accents ride the gradient */
+.kite-bottom-nav-item-active {
+  background: var(--kite-accent-gradient);
+  color: #fff;
+}
+:root.dark .kite-bottom-nav-item-active,
+[data-theme="dark"] .kite-bottom-nav-item-active { color: #140b22; }
+
+.kite-progress-fill { background: var(--kite-accent-gradient); }
+
+/* Featured article card gets a vivid gradient top edge */
+.kite-article-card-featured {
+  border-top: 3px solid transparent;
+  border-image: var(--kite-accent-gradient) 1;
+}
+
+/* Page-title accent rule becomes a gradient bar */
+.kite-page-title-accent {
+  border-left: 4px solid transparent;
+  border-image: var(--kite-accent-gradient) 1;
+  box-shadow: none;
+}
+
+/* Primary label pills pop */
+.kite-label-pill-primary { background: var(--kite-accent-gradient); color: #fff; }
+
+/* Selection + links lean into the vivid accent */
+::selection { background: color-mix(in srgb, var(--kite-primary) 30%, transparent); }

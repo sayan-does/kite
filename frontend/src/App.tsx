@@ -8,10 +8,12 @@ import { api } from './api/client'
 import { captureGitHubTokenFromSession, clearGitHubProviderToken } from './lib/githubToken'
 import { supabase } from './lib/supabase'
 import Discover from './routes/Discover'
+import Events from './routes/Events'
 import Login from './routes/Login'
 import MyStack from './routes/MyStack'
 import Onboarding from './routes/Onboarding'
 import PackageDetail from './routes/PackageDetail'
+import Saved from './routes/Saved'
 import Settings from './routes/Settings'
 
 function AppBackground() {
@@ -94,6 +96,8 @@ function AppShell() {
   const tabs = [
     { path: '/discover', label: 'Discover' },
     { path: '/my-stack', label: 'My Stack' },
+    { path: '/events', label: 'Events' },
+    { path: '/saved', label: 'Saved' },
   ]
 
   const navClass = (active: boolean) =>
@@ -131,6 +135,8 @@ function AppShell() {
             <Route path="/discover" element={<OnboardGuard><Discover /></OnboardGuard>} />
             <Route path="/my-stack" element={<MyStack />} />
             <Route path="/my-stack/:ecosystem/:packageName" element={<PackageDetail />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/saved" element={<Saved />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/discover" replace />} />
           </Routes>

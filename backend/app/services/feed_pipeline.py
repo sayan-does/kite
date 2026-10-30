@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Literal
@@ -296,22 +297,36 @@ async def run_fast_cycle(
         topics_total=len(target_topics),
     )
 
+    # Collect feeds concurrently (bounded) instead of one-at-a-time. Feeds span
+    # many domains, so the per-domain throttle in base.py rarely applies across
+    # them; this turns a sum-of-latencies cycle into a max-of-latencies one.
+    sem = asyncio.Semaphore(max(1, settings.COLLECT_MAX_CONCURRENCY))
+
+    async def _collect_feed(feed: dict) -> tuple[dict, list[CollectedItem], dict | None]:
+        async with sem:
+            try:
+                if feed.get("kind") == "hn":
+                    items, poll = await _collect_hn_for_topics(feed, target_topics)
+                else:
+                    items, poll = await _collect_one_feed(
+                        feed,
+                        ignore_cache=feed.get("topic") in cold,
+                    )
+                return feed, items, poll
+            except Exception as exc:
+                logger.exception("collector failed for %s: %s", feed.get("url"), exc)
+                return feed, [], None
+            finally:
+                feed_jobs.increment(job_id, "feeds_done")
+
+    # gather preserves input order, so persisted items stay deterministic.
+    collected = await asyncio.gather(*(_collect_feed(f) for f in due_feeds))
+
     all_items: list[CollectedItem] = []
-    for feed in due_feeds:
-        try:
-            if feed.get("kind") == "hn":
-                items, poll = await _collect_hn_for_topics(feed, target_topics)
-            else:
-                items, poll = await _collect_one_feed(
-                    feed,
-                    ignore_cache=feed.get("topic") in cold,
-                )
+    for feed, items, poll in collected:
+        if poll is not None:
             _update_feed_poll(feed["id"], poll)
             all_items.extend(items)
-        except Exception as exc:
-            logger.exception("collector failed for %s: %s", feed.get("url"), exc)
-        finally:
-            feed_jobs.increment(job_id, "feeds_done")
 
     feed_jobs.update(job_id, stage="ranking", articles_collected=len(all_items))
     stats = await _persist_items(all_items)

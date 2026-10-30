@@ -3,7 +3,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from app.auth import get_current_user_id
@@ -13,6 +14,8 @@ from app.services import feed_jobs
 from app.services.article_enrich import fallback_payload, needs_enrichment, summarize_article
 from app.services.feed_pipeline import run_fast_cycle
 from app.services.rate_limit import check_rate_limit
+from app.services.syndication import render_rss
+from app.services.tokens import verify_token
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -33,6 +36,7 @@ class FeedStateUpdate(BaseModel):
     seen: Optional[bool] = None
     read: Optional[bool] = None
     dismissed: Optional[bool] = None
+    saved: Optional[bool] = None
 
 
 @router.get("/interest-tags")
@@ -61,6 +65,14 @@ def _absolute_url(raw: str | None) -> str | None:
     return value
 
 
+def _reading_minutes(a: dict) -> int:
+    """Estimated read time from the richest available text (~200 wpm, min 1)."""
+    text = (a.get("body") or a.get("summary") or a.get("one_liner") or "").strip()
+    if not text:
+        return 1
+    return max(1, round(len(text.split()) / 200))
+
+
 def _article_payload(a: dict, disabled_types: set, *, include_body: bool = True) -> dict:
     citations = _filter_citations(a.get("citations") or [], disabled_types)
     youtube_url = a.get("youtube_url")
@@ -79,6 +91,7 @@ def _article_payload(a: dict, disabled_types: set, *, include_body: bool = True)
         "youtube_url": youtube_url,
         "url": _absolute_url(a.get("url")),
         "published_at": a.get("published_at"),
+        "reading_minutes": _reading_minutes(a),
     }
     if include_body:
         payload["body"] = a.get("body")
@@ -462,17 +475,25 @@ async def update_feed_state(
     if not article_resp.data:
         raise HTTPException(status_code=404, detail="Article not found")
 
-    if body.seen is None and body.read is None and body.dismissed is None:
+    if body.seen is None and body.read is None and body.dismissed is None and body.saved is None:
         raise HTTPException(status_code=400, detail="At least one state field required")
 
     existing_resp = (
         supabase.table("user_article_state")
-        .select("seen, read, dismissed")
+        .select("seen, read, dismissed, saved, saved_at")
         .eq("user_id", user_id)
         .eq("kb_article_id", kb_article_id)
         .execute()
     )
     prev = existing_resp.data[0] if existing_resp.data else {}
+
+    saved = body.saved if body.saved is not None else prev.get("saved", False)
+    if body.saved is True:
+        saved_at = datetime.now(timezone.utc).isoformat()
+    elif body.saved is False:
+        saved_at = None
+    else:
+        saved_at = prev.get("saved_at")
 
     row = {
         "user_id": user_id,
@@ -480,8 +501,68 @@ async def update_feed_state(
         "seen": body.seen if body.seen is not None else prev.get("seen", False),
         "read": body.read if body.read is not None else prev.get("read", False),
         "dismissed": body.dismissed if body.dismissed is not None else prev.get("dismissed", False),
+        "saved": saved,
+        "saved_at": saved_at,
     }
     supabase.table("user_article_state").upsert(
         row, on_conflict="user_id, kb_article_id"
     ).execute()
     return {"ok": True}
+
+
+@router.get("/feed/saved")
+async def get_saved_feed(user_id: str = Depends(get_current_user_id)):
+    """List the user's saved (read-later) articles, newest-saved first."""
+    states = (
+        supabase.table("user_article_state")
+        .select("kb_article_id, saved_at")
+        .eq("user_id", user_id)
+        .eq("saved", True)
+        .order("saved_at", desc=True)
+        .execute()
+        .data
+        or []
+    )
+    ids = [s["kb_article_id"] for s in states]
+    if not ids:
+        return {"articles": []}
+
+    rows = supabase.table("kb_articles").select("*").in_("id", ids).execute().data or []
+    by_id = {r["id"]: r for r in rows}
+    disabled = _disabled_citation_types(user_id)
+    ordered = [by_id[i] for i in ids if i in by_id]
+    for a in ordered:
+        a["source"] = a.get("topic_kind")
+    return {"articles": [_article_payload(a, disabled, include_body=False) for a in ordered]}
+
+
+@router.get("/feed.rss")
+async def feed_rss(request: Request, token: str = Query(..., description="Personal Kite token")):
+    """Personal RSS 2.0 feed, authenticated by a stateless signed token.
+
+    Lets a user read their Kite feed in any RSS reader without logging in.
+    """
+    user_id = verify_token(token)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+
+    disabled = _disabled_citation_types(user_id)
+    page = _kb_feed_page(user_id, None, 1, disabled, include_body=False)
+    base = str(request.base_url).rstrip("/")
+    items = [
+        {
+            "title": a.get("title"),
+            "url": a.get("url") or "",
+            "summary": a.get("one_liner") or a.get("summary") or "",
+            "published_at": a.get("published_at"),
+        }
+        for a in page["articles"]
+    ]
+    xml = render_rss(
+        title="Kite — your tech feed",
+        link=base or "https://kite.app",
+        description="Your personalized Kite tech feed",
+        self_url=f"{base}/feed.rss?token={token}" if base else None,
+        items=items,
+    )
+    return Response(content=xml, media_type="application/rss+xml; charset=utf-8")

@@ -52,7 +52,7 @@ export async function api(path: string, options: RequestInit = {}): Promise<Resp
 
 export async function updateFeedState(
   articleId: string,
-  state: { seen?: boolean; read?: boolean; dismissed?: boolean },
+  state: { seen?: boolean; read?: boolean; dismissed?: boolean; saved?: boolean },
 ): Promise<Response> {
   return api(`/feed/${articleId}/state`, {
     method: 'POST',

@@ -28,12 +28,15 @@ interface ArticleCardProps {
   citations: Citation[]
   youtubeUrl?: string | null
   publishedAt?: string | null
+  readingMinutes?: number | null
   isResearch?: boolean
   tier?: 'raw' | 'reviewed' | null
   index?: number
   dismissed?: boolean
+  initialSaved?: boolean
   onDismiss?: (id: string) => void
   onRead?: (id: string) => void
+  onToggleSave?: (id: string, saved: boolean) => void
   onExpand?: (id: string) => Promise<ArticleDetailResult | null>
 }
 
@@ -112,18 +115,29 @@ export default function ArticleCard({
   citations,
   youtubeUrl,
   publishedAt,
+  readingMinutes,
   isResearch = false,
   tier = 'reviewed',
   index = 0,
   dismissed = false,
+  initialSaved = false,
   onDismiss,
   onRead,
+  onToggleSave,
   onExpand,
 }: ArticleCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [detailBody, setDetailBody] = useState<string | null>(null)
   const [generatingNote, setGeneratingNote] = useState(false)
+  const [saved, setSaved] = useState(initialSaved)
+
+  const toggleSave = () => {
+    if (!id) return
+    const next = !saved
+    setSaved(next)
+    onToggleSave?.(id, next)
+  }
 
   const badge = sourceBadgeLabel(source, topic)
   const faceText = displayFaceText(oneLiner, summary, title, tier)
@@ -198,30 +212,58 @@ export default function ArticleCard({
             <span className="kite-label-pill kite-label-pill-muted">Archive</span>
           )}
         </div>
-        {id && onDismiss && !dismissed && (
-          <button
-            type="button"
-            onClick={() => onDismiss(id)}
-            className="kite-article-icon-btn"
-            aria-label="Dismiss article"
-            title="Dismiss"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M18 6L6 18M6 6l12 12"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
-        )}
+        <div className="kite-article-actions">
+          {id && onToggleSave && (
+            <button
+              type="button"
+              onClick={toggleSave}
+              className="kite-article-icon-btn"
+              aria-label={saved ? 'Remove from saved' : 'Save for later'}
+              aria-pressed={saved}
+              title={saved ? 'Saved' : 'Save for later'}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} aria-hidden="true">
+                <path
+                  d="M6 4h12a1 1 0 011 1v15l-7-4-7 4V5a1 1 0 011-1z"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          )}
+          {id && onDismiss && !dismissed && (
+            <button
+              type="button"
+              onClick={() => onDismiss(id)}
+              className="kite-article-icon-btn"
+              aria-label="Dismiss article"
+              title="Dismiss"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M18 6L6 18M6 6l12 12"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="kite-article-body">
         <div className="kite-article-meta">
           {dateLabel && <span>{dateLabel}</span>}
-          {dateLabel && sourceUrl && <span className="kite-article-meta-dot" />}
+          {readingMinutes ? (
+            <>
+              {dateLabel && <span className="kite-article-meta-dot" />}
+              <span>{readingMinutes} min read</span>
+            </>
+          ) : null}
+          {(dateLabel || readingMinutes) && sourceUrl && <span className="kite-article-meta-dot" />}
           {sourceUrl && (
             <a
               href={sourceUrl}
