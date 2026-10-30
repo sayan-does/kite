@@ -162,6 +162,14 @@ utility + fit + feasibility, with at least one user-installable MCP as required.
   typography (Fraunces serif display + Geist body + Space Grotesk accents). Build+lint green.
 - /design skill: NOT available in this environment — implemented typography directly.
 
+## UNBLOCKED 2026-10-31: DB password provided → migration 0015 APPLIED.
+- Feature 4 (Saved/Read-later): DONE. saved/saved_at on user_article_state;
+  FeedStateUpdate.saved + /feed/saved; bookmark toggle on ArticleCard; Saved route+nav;
+  test_saved.py 3 pass. ALL 6 FEATURES NOW COMPLETE.
+- Pop colors: vivid violet->fuchsia gradient accent layer added (user request).
+- Remaining for promise: re-run full backend + e2e; resolve/triage mystack:79 +
+  pre-existing settings e2e + digest flake. Then emit <promise>KITE-PHASE2-SHIPPED</promise>.
+
 ## BLOCKERS (need user)
 - Migration 0015 can't apply: SUPABASE_DB_URL password is stale (auth failed; URL shape ok).
   Fix: reset DB password in Supabase dashboard → update backend/.env, OR user pastes
