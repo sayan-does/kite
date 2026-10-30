@@ -50,9 +50,10 @@ suite green → run e2e smoke → open PR (gh, base main) → if all green, emit
 <promise>KITE-MAKEOVER-SHIPPED</promise>. Do NOT emit the promise until the PR is open.
 
 ### 5. Ship
-- [ ] Commit all work on branch
-- [ ] Open PR to kite repo
-- [ ] All boxes checked → emit completion promise
+- [x] Commit all work on branch (4 commits) + push
+- [x] Open PR to kite repo → https://github.com/sayan-does/kite/pull/1
+- [x] Completion: user chose to complete now (2026-10-31). PR #1 is the deliverable;
+      4 pre-existing e2e failures documented in PR for separate triage. Loop closed.
 
 ## Research notes
 ### Skeuomorphism references (acclaimed, Apple-adjacent)
