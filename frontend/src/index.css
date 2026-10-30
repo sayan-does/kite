@@ -1646,3 +1646,214 @@ body {
     transform: none !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   SKEUOMORPHIC MATERIAL LAYER — Apple-inspired depth makeover
+   Appended override layer. Keeps the "Technical Archive" palette but gives
+   every surface real material: lit-from-above bevels, pressed-in wells,
+   stacked ambient shadow, glossy tactile buttons, and faint grain.
+   Token + semantic-class driven — no JSX theme-branching.
+   ══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* material light response (light theme) */
+  --kite-mat-highlight: rgba(255, 255, 255, 0.78);
+  --kite-mat-highlight-soft: rgba(255, 255, 255, 0.45);
+  --kite-mat-lowlight: rgba(45, 40, 30, 0.14);
+  --kite-mat-ao-1: rgba(49, 48, 45, 0.06);
+  --kite-mat-ao-2: rgba(49, 48, 45, 0.1);
+  --kite-mat-ao-3: rgba(49, 48, 45, 0.12);
+
+  /* raised bevel: bright top lip + soft bottom shade (lit from above) */
+  --kite-bevel:
+    inset 0 1px 0 var(--kite-mat-highlight),
+    inset 0 -1.5px 2px var(--kite-mat-lowlight);
+  /* pressed-in well for inputs and recessed areas */
+  --kite-inset:
+    inset 0 2px 5px rgba(45, 40, 30, 0.16),
+    inset 0 1px 1px rgba(45, 40, 30, 0.1),
+    0 1px 0 var(--kite-mat-highlight-soft);
+  /* stacked ambient occlusion for floating material */
+  --kite-raise:
+    0 1px 1px var(--kite-mat-ao-1),
+    0 3px 6px var(--kite-mat-ao-2),
+    0 10px 24px var(--kite-mat-ao-3);
+  --kite-raise-lg:
+    0 1px 1px var(--kite-mat-ao-1),
+    0 6px 14px var(--kite-mat-ao-2),
+    0 20px 48px var(--kite-mat-ao-3);
+
+  /* faint paper/metal grain (inline SVG fractal noise, black @ ~4% alpha) */
+  --kite-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+:root.dark,
+[data-theme="dark"] {
+  --kite-mat-highlight: rgba(255, 255, 255, 0.1);
+  --kite-mat-highlight-soft: rgba(255, 255, 255, 0.06);
+  --kite-mat-lowlight: rgba(0, 0, 0, 0.45);
+  --kite-mat-ao-1: rgba(0, 0, 0, 0.3);
+  --kite-mat-ao-2: rgba(0, 0, 0, 0.4);
+  --kite-mat-ao-3: rgba(0, 0, 0, 0.48);
+  --kite-inset:
+    inset 0 2px 6px rgba(0, 0, 0, 0.55),
+    inset 0 1px 1px rgba(0, 0, 0, 0.4),
+    0 1px 0 var(--kite-mat-highlight-soft);
+  /* lighter grain reads better on charcoal */
+  --kite-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* Material grain over the animated mesh background (behind all content) */
+.kite-app-bg {
+  background-color: var(--kite-bg);
+  background-image: var(--kite-grain);
+  background-repeat: repeat;
+}
+
+/* ── Raised material: cards, panels, article cards ── */
+.kite-card,
+.kite-card-static,
+.kite-panel,
+.kite-article-card {
+  box-shadow: var(--kite-bevel), var(--kite-raise);
+}
+
+.kite-card:hover,
+.kite-article-card:hover,
+.kite-card-static:hover {
+  box-shadow: var(--kite-bevel), var(--kite-raise-lg);
+}
+
+/* glossy lit header strip on article cards */
+.kite-article-head {
+  box-shadow: inset 0 1px 0 var(--kite-mat-highlight);
+}
+
+/* ── Glossy tactile primary button (depresses on press) ── */
+.kite-btn-primary {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--kite-primary) 80%, #fff) 0%,
+    var(--kite-primary) 52%,
+    var(--kite-primary-hover) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--kite-primary-hover) 70%, #000);
+  box-shadow: var(--kite-bevel), var(--kite-raise);
+}
+
+.kite-btn-primary:hover:not(:disabled) {
+  box-shadow: var(--kite-bevel), var(--kite-raise-lg);
+}
+
+.kite-btn-primary:active:not(:disabled) {
+  box-shadow: var(--kite-inset);
+  transform: translateY(1px) scale(0.99);
+}
+
+/* secondary + icon buttons: raised chrome */
+.kite-btn-secondary,
+.kite-icon-btn {
+  box-shadow: var(--kite-bevel), var(--kite-raise);
+}
+
+.kite-btn-secondary:active:not(:disabled),
+.kite-icon-btn:active {
+  box-shadow: var(--kite-inset);
+  transform: translateY(1px) scale(0.99);
+}
+
+/* ── Chips: raised, press to inset ── */
+.kite-chip {
+  box-shadow: var(--kite-bevel), var(--kite-raise);
+}
+
+.kite-chip:hover {
+  box-shadow: var(--kite-bevel), var(--kite-raise-lg);
+}
+
+.kite-chip:active,
+.kite-chip-active {
+  box-shadow: var(--kite-inset);
+}
+
+/* ── Inputs & selects: pressed-in wells ── */
+.kite-input,
+.kite-select {
+  box-shadow: var(--kite-inset);
+}
+
+.kite-input:focus,
+.kite-select:focus {
+  box-shadow: var(--kite-inset), 0 0 0 3px var(--kite-primary-soft);
+}
+
+/* ── Chrome bars: lit top edge ── */
+.kite-header {
+  box-shadow: inset 0 1px 0 var(--kite-mat-highlight), 0 2px 10px var(--kite-mat-ao-2);
+}
+
+@media (max-width: 767px) {
+  .kite-bottom-nav {
+    box-shadow: inset 0 1px 0 var(--kite-mat-highlight), 0 -2px 12px var(--kite-mat-ao-2);
+  }
+}
+
+/* active nav pill reads as a glossy raised key */
+.kite-bottom-nav-item-active {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--kite-primary-container) 78%, #fff) 0%,
+    var(--kite-primary-container) 100%
+  );
+  box-shadow: var(--kite-bevel), var(--kite-raise);
+}
+
+/* ── Recessed surfaces: streak, quiz options, progress well ── */
+.kite-streak,
+.kite-quiz-option {
+  box-shadow: var(--kite-bevel);
+}
+
+.kite-quiz-option-chosen,
+.kite-quiz-option-correct,
+.kite-quiz-option-wrong {
+  box-shadow: var(--kite-inset);
+}
+
+.kite-progress {
+  box-shadow: var(--kite-inset);
+}
+
+.kite-progress-fill {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* empty-state motif reads as a pressed medallion */
+.kite-empty-motif {
+  box-shadow: var(--kite-bevel), var(--kite-raise);
+}
+
+/* status + badge pills get a subtle raised lip */
+.kite-badge-stack,
+.kite-badge-interest,
+.kite-label-pill-primary,
+.kite-status-up_to_date,
+.kite-status-release,
+.kite-status-security,
+.kite-status-breaking,
+.kite-status-buzz {
+  box-shadow: inset 0 1px 0 var(--kite-mat-highlight-soft);
+}
+
+/* modal sheet floats on stacked ambient material */
+.kite-modal-panel {
+  box-shadow: var(--kite-bevel), var(--kite-raise-lg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kite-btn-primary:active:not(:disabled),
+  .kite-btn-secondary:active:not(:disabled),
+  .kite-icon-btn:active {
+    transform: none !important;
+  }
+}
