@@ -37,10 +37,17 @@
   bookmarks ("save for later"), on-demand topic TL;DR digest (agentic, uses existing LLM cascade)
 
 ### 4. Testing — e2e / integration / smoke
-- [ ] Backend test suite green
-- [ ] Frontend build/lint green
-- [ ] e2e (Playwright) smoke pass
-- [ ] Final review
+- [x] Frontend build/lint green (only pre-existing theme.tsx warning)
+- [~] Backend full suite running (bg id bbxgpz0sz). Earlier full run: 332 pass / 1 fail
+      (now fixed + verified) + 5 new reading-time tests. Confirm final count on resume.
+- [ ] e2e (Playwright) discover smoke — `cd e2e && npx playwright test --project=chromium`
+      (auto-starts backend+frontend, creates live Supabase user, seeds 22 articles).
+      RUN ONLY AFTER backend suite finishes (avoid Supabase contention).
+- [ ] Final review (/code-review optional)
+
+RESUME NOTES: branch feat/skeuomorphic-makeover pushed. Remaining: confirm backend
+suite green → run e2e smoke → open PR (gh, base main) → if all green, emit
+<promise>KITE-MAKEOVER-SHIPPED</promise>. Do NOT emit the promise until the PR is open.
 
 ### 5. Ship
 - [ ] Commit all work on branch
