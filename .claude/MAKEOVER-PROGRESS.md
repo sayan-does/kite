@@ -75,3 +75,66 @@ suite green → run e2e smoke → open PR (gh, base main) → if all green, emit
 
 ## Decisions log
 - 2026-10-31: branch created, completion promise set, progress tracker created.
+- 2026-10-31: Phase 1 shipped as PR #1. Loop re-opened for Phase 2.
+
+---
+
+# PHASE 2 — 4 utility features + <3s feed + deploy
+Completion promise: `KITE-PHASE2-SHIPPED`. Emit only when ALL below true.
+
+## Brainstormed feature slate (decided; aligned with scope)
+Scope anchors: (a) stay current on tech news, (b) track dependency risk. Picked for
+utility + fit + feasibility, with at least one user-installable MCP as required.
+
+1. **Kite MCP server** (headline — user explicitly asked). A streamable-HTTP MCP endpoint
+   mounted on the FastAPI app that a user adds to their OWN AI client (Claude Desktop/Code)
+   like a plugin, authenticating with their personal Kite API key. Tools:
+   `get_feed`, `dependency_risk` (stack/package), `whats_new`, `search_tech`.
+   → "mcps that users can add on their own accounts like plugins".
+2. **Personal RSS/Atom feed + OPML export.** Kite emits a per-user RSS/Atom feed (token in
+   URL) so they can read Kite in any reader; OPML export of their sources. News-agg utility.
+3. **On-demand Stack Risk Report.** One endpoint+view summarizing tracked stack risk (version
+   gaps / security / breaking) reusing version_gap/whats_new. Core dependency-risk utility.
+4. **Saved / Read-later.** Bookmark articles + a Saved filter (adds `saved` to
+   user_article_state — needs a migration). Classic reading utility.
+
+## <3s feed building
+- Define metric: GET /feed returns in < 3s for a user with warm categories (prefill keeps
+  them warm). Measure current p50/p95, then optimize (cache, trim queries, concurrent reads).
+- Verify with a timed test / script.
+
+## Deploy (BLOCKED on user cloud auth)
+- Frontend → Vercel (free). Backend → free host (Render already in render.yaml; Fly as alt).
+- I CANNOT run `vercel login` / host auth autonomously. Need user to authenticate in-session
+  (`! vercel login`, etc.) or deploy via dashboard. I'll make everything deploy-ready + CI.
+
+## Phase-2 completion checklist
+- [ ] Feature 1: Kite MCP server (+ tests, + docs for users to add it)   [needs API key → migration]
+- [ ] Feature 2: Personal RSS/Atom + OPML export (+ tests)               [needs API key → migration]
+- [ ] Feature 3: Stack Risk Report (+ tests)
+- [ ] Feature 4: Saved / Read-later (+ migration + tests)                [needs migration]
+- [ ] Feature 5 (ADDED 2026-10-31 by user): Tech-events news + calendar reminders.
+      Collector for tech events (confs/releases/meetups) + "Add to Google Calendar"
+      links + .ics export w/ alarms (avoids OAuth) OR full Google OAuth if user insists.
+
+## Phase-2 progress (committed)
+- Migration 0015 WRITTEN (api_key cols on profiles + saved on user_article_state). NOT applied (blocked).
+- syndication.py (render_rss, render_opml) + calendars.py (google_calendar_url, render_ics) — pure,
+  5 unit tests pass. Cores for feature 2 (RSS/OPML export) and feature 5 (calendar links/ICS).
+- NEXT (DB-gated, after migration applies): API-key mint/verify in auth + /me; RSS/OPML endpoints;
+  Saved endpoints+UI; Stack Risk Report; MCP server; tech-events collector+persist; <3s feed; deploy.
+- Auth note: interactive CLI logins fail in this non-TTY shell — use tokens (Vercel/Render) at deploy;
+  Supabase migration needs DB password (dashboard reset) or SQL-editor paste of 0015.
+
+## BLOCKERS (need user)
+- Migration 0015 can't apply: SUPABASE_DB_URL password is stale (auth failed; URL shape ok).
+  Fix: reset DB password in Supabase dashboard → update backend/.env, OR user pastes
+  migrations/0015 SQL into the Supabase SQL editor. Until then: MCP/RSS/Saved blocked.
+- Google Calendar full OAuth needs a Google Cloud OAuth client (user setup). Proposed
+  default: .ics + add-to-calendar links (no OAuth) to keep it simple + prod-feasible.
+- [ ] Feed build < 3s (measured + verified)
+- [ ] All tests green (backend + frontend + targeted)
+- [ ] Deploy-READY (user chose "make it deploy-ready, I deploy"): Vercel + free backend
+      configs, CI, env docs, one-command/dashboard deploy path. No live deploy by me.
+- [ ] PR updated/opened → then emit <promise>KITE-PHASE2-SHIPPED</promise>
+- Migrations: user approved applying additive migrations to live Supabase.
