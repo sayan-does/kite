@@ -1927,11 +1927,15 @@ body {
 .kite-label-pill,
 .kite-badge-stack,
 .kite-badge-interest,
-.kite-citation,
+.kite-citation {
+  font-family: var(--kite-font-accent);
+}
+/* Buttons/nav stay in the UI body font (Geist): narrower + conventional, and
+   keeps dense toolbars from overflowing on small viewports. */
 .kite-btn-primary,
 .kite-btn-secondary,
 .kite-nav-link {
-  font-family: var(--kite-font-accent);
+  font-family: var(--kite-font-body);
 }
 
 .kite-logo,
