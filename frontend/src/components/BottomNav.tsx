@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 const tabs = [
   { path: '/discover', label: 'Discover', icon: DiscoverIcon },
   { path: '/my-stack', label: 'Stack', icon: StackIcon },
+  { path: '/events', label: 'Events', icon: EventsIcon },
   { path: '/settings', label: 'Settings', icon: SettingsIcon },
 ]
 
@@ -41,6 +42,14 @@ function StackIcon({ active }: { active: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.25 : 1.75}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+    </svg>
+  )
+}
+
+function EventsIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.25 : 1.75}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
     </svg>
   )
 }
