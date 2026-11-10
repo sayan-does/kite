@@ -42,6 +42,7 @@ docs
 !docs/*.md
 skills
 .vercel
+.cursor/
 deploy/render.env
 deploy/vercel.env
 deploy/github-secrets.env
