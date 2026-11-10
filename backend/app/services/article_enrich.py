@@ -10,6 +10,7 @@ from app.agents.common import fetch_article_text
 from app.agents.discovery.nodes import _classify_url
 from app.services.extractive import clean_snippet, extractive_one_liner
 from app.services.llm import BudgetExhausted, budget, for_role, parse_json_response
+from app.services.tinyfish_fetch import fetch_single_article
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +29,22 @@ def needs_enrichment(article: dict) -> bool:
     return not body or body == one_liner
 
 
-async def summarize_article(article: dict, *, use_budget: bool = True) -> dict | None:
-    """Fetch page text and produce one_liner + full_summary body."""
+async def summarize_article(
+    article: dict,
+    *,
+    use_budget: bool = True,
+    prefetched_content: str | None = None
+) -> dict | None:
+    """Fetch page text and produce one_liner + full_summary body + key_links."""
     client = for_role("summarize")
     url = article.get("url") or ""
-    content = await fetch_article_text(url) if url else None
+    
+    # Use prefetched content if available, otherwise fetch
+    if prefetched_content:
+        content = prefetched_content
+    else:
+        content = await fetch_single_article(url) if url else None
+    
     raw_body = clean_snippet(article.get("body") or "")
     content = content or raw_body or clean_snippet(article.get("summary") or "")
     if len(content.strip()) < 20:
@@ -42,7 +54,9 @@ async def summarize_article(article: dict, *, use_budget: bool = True) -> dict |
     prompt = (
         f"Summarize for topic '{article.get('topic')}'.\n\n"
         f"Title: {article.get('title')}\nURL: {url}\n\nContent:\n{content[:8000]}\n\n"
-        'JSON only: {"one_liner":"...","full_summary":"...","source_type":"blog|github|official_docs|youtube"}'
+        'JSON only: {"one_liner":"...","full_summary":"...","source_type":"blog|github|official_docs|youtube",'
+        '"key_links":[{"title":"...","url":"..."}]} '
+        'Extract 2-3 most relevant links from the content that provide additional context.'
     )
     if use_budget and not budget.try_spend(1200):
         raise BudgetExhausted("summarize budget exhausted")
@@ -56,12 +70,19 @@ async def summarize_article(article: dict, *, use_budget: bool = True) -> dict |
             return None
         one_liner = parsed.get("one_liner", "")
         full_summary = parsed.get("full_summary", "")
+        key_links = parsed.get("key_links", [])
         if not one_liner or not full_summary:
             return None
         st = parsed.get("source_type", source_type)
         if st not in ("official_docs", "github", "blog", "youtube"):
             st = source_type
-        return {"one_liner": one_liner, "body": full_summary, "summary": one_liner, "source_type": st}
+        return {
+            "one_liner": one_liner,
+            "body": full_summary,
+            "summary": one_liner,
+            "source_type": st,
+            "key_links": key_links
+        }
     except BudgetExhausted:
         raise
     except Exception as exc:

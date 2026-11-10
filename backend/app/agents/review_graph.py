@@ -10,6 +10,7 @@ from langchain_core.messages import HumanMessage
 from app.db import supabase
 from app.services.article_enrich import summarize_article
 from app.services.llm import BudgetExhausted, budget, for_role, parse_json_response
+from app.services.tinyfish_fetch import batch_fetch_articles
 from app.services.youtube import resolve_youtube_url
 
 logger = logging.getLogger(__name__)
@@ -65,14 +66,29 @@ async def run_review_cycle(
     if on_progress:
         on_progress(0, len(rows))
 
+    passed_rows = []
     for row in rows:
         try:
             if not await _triage(row):
                 supabase.table("kb_articles").update({"status": "rejected"}).eq("id", row["id"]).execute()
                 rejected += 1
+                if on_progress:
+                    on_progress(reviewed + rejected, len(rows))
                 continue
+            passed_rows.append(row)
+        except BudgetExhausted:
+            break
+        except Exception as exc:
+            logger.exception("triage failed for %s: %s", row.get("id"), exc)
 
-            summary = await summarize_article(row)
+    # Batch prefetch articles that passed triage
+    urls_to_fetch = [r["url"] for r in passed_rows if r.get("url")]
+    prefetched = await batch_fetch_articles(urls_to_fetch) if urls_to_fetch else {}
+
+    for row in passed_rows:
+        try:
+            content = prefetched.get(row.get("url"))
+            summary = await summarize_article(row, prefetched_content=content)
             if not summary:
                 continue
 
