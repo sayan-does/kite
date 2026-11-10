@@ -177,9 +177,27 @@ export default function Onboarding() {
       <div className="mb-2 flex gap-2">
         <span className="kite-badge-stack">Step 2 of 2</span>
       </div>
-      <h2 className="kite-page-title">Import your stack</h2>
+      <h2 className="kite-page-title">
+        Import your stack
+        <span className="group relative ml-2 inline-block align-middle">
+          <button
+            type="button"
+            className="kite-icon-btn h-5 w-5 rounded-full text-xs"
+            aria-label="More information about dependency tracking"
+          >
+            ?
+          </button>
+          <span className="pointer-events-none absolute bottom-full left-1/2 mb-2 w-64 -translate-x-1/2 scale-95 rounded-lg border border-[var(--kite-border)] bg-[var(--kite-surface-1)] p-3 text-xs text-[var(--kite-text)] opacity-0 shadow-lg transition-opacity group-hover:opacity-100 z-50">
+            Track package.json, requirements.txt, Cargo.toml, etc. Get alerts for breaking changes and security vulnerabilities.
+            <br />
+            <span className="mt-1 block text-[var(--kite-text-muted)]">
+              Supported: package.json · requirements.txt · pyproject.toml · pom.xml · Cargo.toml
+            </span>
+          </span>
+        </span>
+      </h2>
       <p className="kite-page-subtitle">
-        Upload package.json, requirements.txt, pyproject.toml, or pom.xml to track dependencies.
+        Upload your manifest files to track dependencies and get instant alerts.
       </p>
 
       <div className="mt-8 space-y-4">

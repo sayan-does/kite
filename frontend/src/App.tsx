@@ -9,6 +9,7 @@ import { captureGitHubTokenFromSession, clearGitHubProviderToken } from './lib/g
 import { supabase } from './lib/supabase'
 import Discover from './routes/Discover'
 import Events from './routes/Events'
+import Landing from './routes/Landing'
 import Login from './routes/Login'
 import MyStack from './routes/MyStack'
 import Onboarding from './routes/Onboarding'
@@ -151,6 +152,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route
           path="/*"

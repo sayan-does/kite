@@ -28,13 +28,32 @@ interface Integration {
   opml_url: string
 }
 
-function CopyField({ label, value }: { label: string; value: string }) {
+function CopyField({ label, value, sensitive = false }: { label: string; value: string; sensitive?: boolean }) {
   const [copied, setCopied] = useState(false)
+  const [revealed, setRevealed] = useState(false)
+  
+  // Mask sensitive values (like tokens) - show only first 8 and last 4 characters
+  const displayValue = sensitive && !revealed
+    ? value.length > 12 
+      ? value.slice(0, 8) + '…' + value.slice(-4)
+      : '••••••••'
+    : value
+  
   return (
     <div className="kite-panel">
       <span className="text-xs kite-text-muted">{label}</span>
       <div className="mt-1 flex items-center gap-2">
-        <code className="min-w-0 flex-1 truncate text-xs" style={{ color: 'var(--kite-text)' }}>{value}</code>
+        <code className="min-w-0 flex-1 truncate text-xs" style={{ color: 'var(--kite-text)' }}>{displayValue}</code>
+        {sensitive && (
+          <button
+            type="button"
+            className="kite-btn-secondary text-xs px-2 py-1"
+            onClick={() => setRevealed(!revealed)}
+            title={revealed ? 'Hide value' : 'Reveal value'}
+          >
+            {revealed ? 'Hide' : 'Show'}
+          </button>
+        )}
         <button
           type="button"
           className="kite-btn-secondary text-xs px-3 py-1"
@@ -327,7 +346,7 @@ export default function Settings() {
         </p>
         {integration ? (
           <div className="mt-3 space-y-2">
-            <CopyField label="Personal token" value={integration.token} />
+            <CopyField label="Personal token" value={integration.token} sensitive />
             <CopyField label="RSS feed URL" value={`${API_BASE}${integration.rss_url}`} />
             <CopyField label="OPML (sources) URL" value={`${API_BASE}${integration.opml_url}`} />
             <CopyField label="MCP server endpoint" value={`${API_BASE}/mcp`} />
