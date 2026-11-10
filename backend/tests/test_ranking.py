@@ -1,9 +1,10 @@
 from app.collectors.base import CollectedItem
-from app.services.feed_pipeline import MIN_RELEVANCE
+from app.config import settings
 from app.services.ranking import (
     _TOPIC_ALIASES,
     compute_score,
     dedup_items,
+    get_min_relevance_for_adapter,
     title_similarity,
     topic_relevance,
 )
@@ -54,7 +55,7 @@ def test_automation_items_pass_relevance_without_the_literal_word():
         "Scraping product data at scale",
     ):
         item = CollectedItem(title=title, url="https://x.com", topic="Automation")
-        assert topic_relevance(item) >= MIN_RELEVANCE, title
+        assert topic_relevance(item) >= settings.MIN_RELEVANCE_DEFAULT, title
         assert compute_score(item) > 0.0, title
 
 
@@ -64,10 +65,11 @@ def test_every_category_clears_min_relevance_on_a_single_alias_hit():
     topic_relevance divides by the alias count, so adding aliases to one
     category silently raises its bar. This pins that invariant for all seven.
     """
+    default_threshold = settings.MIN_RELEVANCE_DEFAULT
     for topic, aliases in _TOPIC_ALIASES.items():
         alias = sorted(aliases)[0]
         item = CollectedItem(title=f"A post about {alias}", url="https://x.com", topic=topic)
-        assert topic_relevance(item) >= MIN_RELEVANCE, f"{topic} via {alias}"
+        assert topic_relevance(item) >= default_threshold, f"{topic} via {alias}"
 
 
 def test_off_topic_item_still_rejected_for_automation():
@@ -75,3 +77,13 @@ def test_off_topic_item_still_rejected_for_automation():
         title="Random cooking tips", url="https://x.com", snippet="pasta", topic="Automation"
     )
     assert compute_score(item) == 0.0
+
+
+def test_get_min_relevance_for_adapter():
+    """Test per-collector MIN_RELEVANCE thresholds."""
+    assert get_min_relevance_for_adapter("hn") == settings.MIN_RELEVANCE_HN
+    assert get_min_relevance_for_adapter("search") == settings.MIN_RELEVANCE_SEARCH
+    assert get_min_relevance_for_adapter("rss") == settings.MIN_RELEVANCE_RSS
+    assert get_min_relevance_for_adapter("papers") == settings.MIN_RELEVANCE_PAPERS
+    assert get_min_relevance_for_adapter("github") == settings.MIN_RELEVANCE_DEFAULT
+    assert get_min_relevance_for_adapter("unknown") == settings.MIN_RELEVANCE_DEFAULT

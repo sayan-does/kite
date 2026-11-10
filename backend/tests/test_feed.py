@@ -71,7 +71,7 @@ def test_feed_shows_article_for_followed_tag(monkeypatch, test_user):
     headers = {"Authorization": f"Bearer {test_user['access_token']}"}
     client.put("/me/interests", json={"tag_ids": [1]}, headers=headers)
 
-    response = client.get("/feed", headers=headers)
+    response = client.get("/feed?tag=Frontend", headers=headers)
     assert response.status_code == 200
     articles = response.json()["articles"]
     assert len(articles) >= 1
@@ -99,7 +99,7 @@ def test_disabling_youtube_keeps_article_removes_youtube_citations(monkeypatch, 
     client.put("/me/interests", json={"tag_ids": [1]}, headers=headers)
     client.put("/me/citation-prefs", json={"prefs": {"youtube": False}}, headers=headers)
 
-    response = client.get("/feed", headers=headers)
+    response = client.get("/feed?tag=Frontend", headers=headers)
     assert response.status_code == 200
     articles = response.json()["articles"]
     frontend_article = next(a for a in articles if a["title"] == "Test Article Frontend")
@@ -120,7 +120,7 @@ def test_pagination_returns_next_slice(monkeypatch, test_user):
     client.put("/me/interests", json={"tag_ids": [1]}, headers=headers)
     # Page 1 is the main test, page 2 should exist or have has_next false
     # Since we only have 1 article, has_next should be false
-    response = client.get("/feed?page=1", headers=headers)
+    response = client.get("/feed?tag=Frontend&page=1", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["page"] == 1
@@ -145,7 +145,7 @@ def test_feed_v2_returns_user_owned_cards(monkeypatch, test_user):
         "citations": [{"type": "blog", "url": "https://example.com", "title": "Src"}],
     }).execute()
 
-    response = client.get("/feed", headers=headers)
+    response = client.get("/feed?tag=react", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data["articles"]) <= 10
@@ -176,7 +176,7 @@ def test_feed_v2_filters_disabled_source_type(monkeypatch, test_user):
         "citations": [{"type": "blog", "url": "https://example.com", "title": "Src"}],
     }).execute()
 
-    response = client.get("/feed", headers=headers)
+    response = client.get("/feed?tag=Frontend", headers=headers)
     card = next((a for a in response.json()["articles"] if a["title"] == "Blog Card"), None)
     assert card is not None
     assert card["source_type"] is None
@@ -226,7 +226,7 @@ def test_kb_feed_returns_matching_articles(monkeypatch, test_user, kb_article_id
     article = _insert_kb_article(title="KB Feed Match")
     kb_article_ids.append(article["id"])
 
-    response = client.get("/feed", headers=headers)
+    response = client.get("/feed?tag=Frontend", headers=headers)
     assert response.status_code == 200
     data = response.json()
     titles = [a["title"] for a in data["articles"]]
@@ -244,11 +244,12 @@ def test_kb_feed_returns_matching_articles(monkeypatch, test_user, kb_article_id
 def test_kb_feed_exposes_is_research(monkeypatch, test_user, kb_article_ids):
     monkeypatch.setattr("app.routers.feed.settings.KB_FEED", True)
     headers = {"Authorization": f"Bearer {test_user['access_token']}"}
-    client.put("/me/interests", json={"tag_ids": [1]}, headers=headers)
+    client.put("/me/interests", json={"tag_ids": [1, 3]}, headers=headers)
 
     article = _insert_kb_article(
         title="KB Research Card",
         topic="AI/ML",
+        tag_id=3,
         is_research=True,
         citations=[
             {"type": "blog", "url": "https://huggingface.co/blog/x", "title": "Post"},
@@ -258,7 +259,7 @@ def test_kb_feed_exposes_is_research(monkeypatch, test_user, kb_article_ids):
     )
     kb_article_ids.append(article["id"])
 
-    response = client.get("/feed", headers=headers)
+    response = client.get("/feed?tag=AI/ML", headers=headers)
     assert response.status_code == 200
     card = next(
         (a for a in response.json()["articles"] if a["title"] == "KB Research Card"),
@@ -282,7 +283,7 @@ def test_kb_feed_excludes_dismissed(monkeypatch, test_user, kb_article_ids):
         "dismissed": True,
     }).execute()
 
-    response = client.get("/feed", headers=headers)
+    response = client.get("/feed?tag=Frontend", headers=headers)
     titles = [a["title"] for a in response.json()["articles"]]
     assert "KB Dismissed" not in titles
 
@@ -303,14 +304,14 @@ def test_kb_feed_pagination_has_next(monkeypatch, test_user, kb_article_ids):
         created.append(article["id"])
         kb_article_ids.append(article["id"])
 
-    response = client.get("/feed?page=1", headers=headers)
+    response = client.get("/feed?tag=Frontend&page=1", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["page"] == 1
     assert len(data["articles"]) == 20
     assert data["has_next"] is True
 
-    page2 = client.get("/feed?page=2", headers=headers)
+    page2 = client.get("/feed?tag=Frontend&page=2", headers=headers)
     assert page2.status_code == 200
     assert len(page2.json()["articles"]) >= 1
 
@@ -398,7 +399,7 @@ def test_kb_feed_filters_disabled_source_type(monkeypatch, test_user, kb_article
     article = _insert_kb_article(title="KB Blog Card")
     kb_article_ids.append(article["id"])
 
-    response = client.get("/feed", headers=headers)
+    response = client.get("/feed?tag=Frontend", headers=headers)
     card = next((a for a in response.json()["articles"] if a["title"] == "KB Blog Card"), None)
     assert card is not None
     assert card["source_type"] is None
@@ -416,12 +417,12 @@ def test_kb_feed_list_view_omits_body(monkeypatch, test_user, kb_article_ids):
     article = _insert_kb_article(title="KB List View", body="Full body should be hidden")
     kb_article_ids.append(article["id"])
 
-    list_resp = client.get("/feed?view=list", headers=headers)
+    list_resp = client.get("/feed?tag=Frontend&view=list", headers=headers)
     assert list_resp.status_code == 200
     card = next(a for a in list_resp.json()["articles"] if a["title"] == "KB List View")
     assert "body" not in card
 
-    detail_resp = client.get("/feed?view=detail", headers=headers)
+    detail_resp = client.get("/feed?tag=Frontend&view=detail", headers=headers)
     assert detail_resp.status_code == 200
     detail_card = next(a for a in detail_resp.json()["articles"] if a["title"] == "KB List View")
     assert detail_card.get("body") == "Full body should be hidden"
@@ -489,7 +490,7 @@ def test_kb_feed_hides_youtube_url_when_disabled(monkeypatch, test_user, kb_arti
     )
     kb_article_ids.append(article["id"])
 
-    response = client.get("/feed", headers=headers)
+    response = client.get("/feed?tag=Frontend", headers=headers)
     card = next(a for a in response.json()["articles"] if a["title"] == "KB YouTube Hidden")
     assert card.get("youtube_url") is None
 
@@ -636,7 +637,7 @@ def test_kb_feed_includes_stack_topic(monkeypatch, test_user, kb_article_ids):
     )
     kb_article_ids.append(article["id"])
 
-    response = client.get("/feed", headers=headers)
+    response = client.get("/feed?tag=react", headers=headers)
     titles = [a["title"] for a in response.json()["articles"]]
     assert "KB Stack Article" in titles
 

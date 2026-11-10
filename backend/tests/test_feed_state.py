@@ -98,12 +98,12 @@ def test_dismissed_removes_from_kb_feed(monkeypatch, test_user, kb_article):
 
     client.put("/me/interests", json={"tag_ids": [1]}, headers=headers)
 
-    before = client.get("/feed", headers=headers)
+    before = client.get("/feed?tag=Frontend", headers=headers)
     assert any(a["id"] == article_id for a in before.json()["articles"])
 
     client.post(f"/feed/{article_id}/state", json={"dismissed": True}, headers=headers)
 
-    after = client.get("/feed", headers=headers)
+    after = client.get("/feed?tag=Frontend", headers=headers)
     assert all(a["id"] != article_id for a in after.json()["articles"])
 
 

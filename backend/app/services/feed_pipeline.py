@@ -20,11 +20,10 @@ from app.config import settings
 from app.db import supabase
 from app.services import feed_jobs
 from app.services.extractive import clean_snippet, extractive_one_liner
-from app.services.ranking import assign_cluster_ids, compute_score, dedup_items, topic_relevance
+from app.services.ranking import assign_cluster_ids, compute_score, dedup_items, get_min_relevance_for_adapter, topic_relevance
 
 logger = logging.getLogger(__name__)
 
-MIN_RELEVANCE = 0.25
 POLL_MIN = 30
 POLL_MAX = 360
 
@@ -192,7 +191,8 @@ async def _persist_items(items: list[CollectedItem]) -> dict:
     skipped_irrelevant = 0
 
     for item in deduped:
-        if topic_relevance(item) < MIN_RELEVANCE:
+        min_rel = get_min_relevance_for_adapter(item.source_adapter)
+        if topic_relevance(item) < min_rel:
             skipped_irrelevant += 1
             continue
         if item.source_adapter == "search" and not await url_is_reachable(item.url):

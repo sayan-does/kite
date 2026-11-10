@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api, updateFeedState } from '../api/client'
 import ArticleCard from '../components/ArticleCard'
 import EmptyState from '../components/EmptyState'
@@ -14,6 +14,11 @@ interface Citation {
   title: string
 }
 
+interface KeyLink {
+  title: string
+  url: string
+}
+
 interface Article {
   id: string
   tag_id: number
@@ -25,6 +30,7 @@ interface Article {
   body?: string | null
   url?: string | null
   citations: Citation[]
+  key_links?: KeyLink[]
   youtube_url?: string | null
   published_at?: string | null
   reading_minutes?: number | null
@@ -85,6 +91,13 @@ export default function Discover() {
   const [feedState, setFeedState] = useState<FeedState>('loading')
   const [hasInterests, setHasInterests] = useState(false)
   const [interestTagIds, setInterestTagIds] = useState<number[]>([])
+  const myTags = useMemo(() => tags.filter((t) => interestTagIds.includes(t.id)), [tags, interestTagIds])
+
+  useEffect(() => {
+    if (!selectedTag && myTags.length > 0) {
+      setSelectedTag(myTags[0].name)
+    }
+  }, [selectedTag, myTags])
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [progress, setProgress] = useState<FeedProgressData | null>(null)
   const [quiz, setQuiz] = useState<QuizSession | null>(null)
@@ -147,8 +160,11 @@ export default function Discover() {
     pageNum: number,
     options?: { signal?: AbortSignal; background?: boolean },
   ) => {
+    if (!tag) {
+      return null
+    }
     const params = new URLSearchParams()
-    if (tag) params.set('tag', tag)
+    params.set('tag', tag)
     params.set('page', String(pageNum))
     params.set('view', 'list')
     try {
@@ -157,9 +173,9 @@ export default function Discover() {
       const data = await res.json()
       if (!mountedRef.current) return null
 
-      const incoming: Article[] = data.articles || []
+      const incoming: Article[] = data.articles || (data.feeds ? data.feeds.flatMap((f: any) => f.articles || []) : [])
       applyFeedPage(tag, pageNum, incoming, Boolean(data.has_next), options)
-      return data
+      return { ...data, articles: incoming }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {
         return null
@@ -532,10 +548,6 @@ export default function Discover() {
 
   const filteredArticles = articles.filter((a) => !dismissedIds.has(a.id))
 
-  // The dropdown filters the feed you already have; it is not a category
-  // picker, so it only lists categories the user actually follows.
-  const myTags = tags.filter((t) => interestTagIds.includes(t.id))
-
   const showSkeleton = feedState === 'loading' && filteredArticles.length === 0
 
   return (
@@ -562,7 +574,9 @@ export default function Discover() {
           className="kite-select"
           aria-label="Filter by tag"
         >
-          <option value="">All tags</option>
+          {myTags.length > 1 && (
+            <option value={myTags.map((t) => t.name).join(',')}>All topics ({myTags.length})</option>
+          )}
           {myTags.map((t) => (
             <option key={t.id} value={t.name}>
               {t.name}
@@ -606,6 +620,7 @@ export default function Discover() {
             body={a.body}
             url={a.url}
             citations={a.citations}
+            keyLinks={a.key_links}
             youtubeUrl={a.youtube_url}
             publishedAt={a.published_at}
             readingMinutes={a.reading_minutes}

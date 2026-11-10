@@ -64,6 +64,17 @@ def topic_relevance(item: CollectedItem) -> float:
     return min(1.0, hits / max(1, len(topic_tokens) * 0.35))
 
 
+def get_min_relevance_for_adapter(source_adapter: str) -> float:
+    """Get MIN_RELEVANCE threshold based on collector type."""
+    thresholds = {
+        "hn": settings.MIN_RELEVANCE_HN,
+        "search": settings.MIN_RELEVANCE_SEARCH,
+        "rss": settings.MIN_RELEVANCE_RSS,
+        "papers": settings.MIN_RELEVANCE_PAPERS,
+    }
+    return thresholds.get(source_adapter, settings.MIN_RELEVANCE_DEFAULT)
+
+
 def recency_decay(published_at: datetime | None, *, half_life_hours: float | None = None) -> float:
     half_life = half_life_hours or settings.FEED_HALF_LIFE_HOURS
     if not published_at:

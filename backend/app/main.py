@@ -32,8 +32,19 @@ async def _prefill_on_startup() -> None:
 async def lifespan(app: FastAPI):
     if settings.ENABLE_SCHEDULER:
         scheduler.add_job(run_daily, "cron", hour=6, minute=0)
+        
+        # Add tag validation worker (runs every 15 minutes)
+        from app.services.tag_validator import validate_untagged_articles
+        scheduler.add_job(
+            lambda: asyncio.create_task(validate_untagged_articles(batch_size=20)),
+            trigger="interval",
+            minutes=15,
+            id="validate_tags",
+            name="Validate NULL tag_id articles",
+        )
+        
         scheduler.start()
-        logger.info("scheduler started (daily 06:00 UTC)")
+        logger.info("scheduler started (daily 06:00 UTC + tag validation every 15min)")
     else:
         logger.info("scheduler disabled; use POST /internal/run-daily")
 
@@ -71,11 +82,36 @@ app.include_router(stack.router)
 
 @app.get("/health")
 async def health():
+    from app.db import supabase
+    
+    # Get last job run info
+    last_run = None
+    try:
+        job_result = (
+            supabase.table("job_runs")
+            .select("*")
+            .eq("job_type", "daily")
+            .order("started_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if job_result.data:
+            last_job = job_result.data[0]
+            last_run = {
+                "status": last_job.get("status"),
+                "started_at": last_job.get("started_at"),
+                "completed_at": last_job.get("completed_at"),
+                "duration_seconds": last_job.get("duration_seconds"),
+            }
+    except Exception as e:
+        logger.warning("Failed to fetch last job run: %s", e)
+    
     return {
         "status": "ok",
         "scheduler": {
             "enabled": settings.ENABLE_SCHEDULER,
             "running": settings.ENABLE_SCHEDULER and scheduler.running,
             "cron_utc": "0 6 * * *",
+            "last_run": last_run,
         },
     }

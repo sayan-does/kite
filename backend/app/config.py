@@ -1,8 +1,11 @@
 import os
+import logging
 
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 
 def parse_cors_origins(raw: str | None) -> list[str]:
@@ -18,21 +21,36 @@ def env_bool(name: str, default: str = "false") -> bool:
     return os.environ.get(name, default).lower() == "true"
 
 
+# Core required credentials (Supabase only)
 REQUIRED = [
     "SUPABASE_URL",
     "SUPABASE_ANON_KEY",
     "SUPABASE_SERVICE_ROLE_KEY",
     "SUPABASE_JWT_SECRET",
     "SUPABASE_DB_URL",
+]
+
+# Optional API credentials (features degrade gracefully when missing)
+OPTIONAL = [
     "GROQ_API_KEY",
     "YOUTUBE_API_KEY",
     "EMAIL_API_KEY",
     "SEARX_URL",
 ]
 
+# Check required
 missing = [v for v in REQUIRED if not os.environ.get(v)]
 if missing:
-    raise RuntimeError(f"missing env: {', '.join(missing)}")
+    raise RuntimeError(f"missing required env: {', '.join(missing)}")
+
+# Warn about optional
+missing_optional = [v for v in OPTIONAL if not os.environ.get(v)]
+if missing_optional:
+    logger.warning(
+        "Optional features disabled due to missing env vars: %s. "
+        "App will run in degraded mode.",
+        ", ".join(missing_optional)
+    )
 
 
 class Settings:
@@ -41,11 +59,14 @@ class Settings:
     SUPABASE_SERVICE_ROLE_KEY: str = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
     SUPABASE_JWT_SECRET: str = os.environ["SUPABASE_JWT_SECRET"]
     SUPABASE_DB_URL: str = os.environ["SUPABASE_DB_URL"]
-    GROQ_API_KEY: str = os.environ["GROQ_API_KEY"]
-    YOUTUBE_API_KEY: str = os.environ["YOUTUBE_API_KEY"]
-    EMAIL_API_KEY: str = os.environ["EMAIL_API_KEY"]
+    
+    # Optional API keys (empty string if not set)
+    GROQ_API_KEY: str = os.environ.get("GROQ_API_KEY", "")
+    YOUTUBE_API_KEY: str = os.environ.get("YOUTUBE_API_KEY", "")
+    EMAIL_API_KEY: str = os.environ.get("EMAIL_API_KEY", "")
     EMAIL_FROM: str = os.environ.get("EMAIL_FROM", "Kite <onboarding@resend.dev>")
-    SEARX_URL: str = os.environ["SEARX_URL"]
+    SEARX_URL: str = os.environ.get("SEARX_URL", "")
+    
     CORS_ORIGINS: list[str] = parse_cors_origins(os.environ.get("CORS_ORIGINS"))
     ENABLE_SCHEDULER: bool = env_bool("ENABLE_SCHEDULER", "true")
     # Groq retired llama-3.3-70b-versatile on 2026-08-16; keep the model overridable.
@@ -86,6 +107,18 @@ class Settings:
 
     # Daily AI quiz (niche picker + LLM-generated questions). Off by default.
     QUIZ_ENABLED: bool = env_bool("QUIZ_ENABLED", "false")
+
+    # --- TinyFish Integration ---
+    TINYFISH_API_KEY: str = os.environ.get("TINYFISH_API_KEY", "")
+    TINYFISH_ENABLED: bool = env_bool("TINYFISH_ENABLED", "false")
+    TINYFISH_BATCH_CONCURRENCY: int = int(os.environ.get("TINYFISH_BATCH_CONCURRENCY", "2"))
+
+    # --- Per-collector MIN_RELEVANCE thresholds ---
+    MIN_RELEVANCE_HN: float = float(os.environ.get("MIN_RELEVANCE_HN", "0.6"))
+    MIN_RELEVANCE_SEARCH: float = float(os.environ.get("MIN_RELEVANCE_SEARCH", "0.6"))
+    MIN_RELEVANCE_RSS: float = float(os.environ.get("MIN_RELEVANCE_RSS", "0.4"))
+    MIN_RELEVANCE_PAPERS: float = float(os.environ.get("MIN_RELEVANCE_PAPERS", "0.3"))
+    MIN_RELEVANCE_DEFAULT: float = float(os.environ.get("MIN_RELEVANCE_DEFAULT", "0.25"))
 
 
 settings = Settings()

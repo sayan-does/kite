@@ -105,6 +105,7 @@ def _article_payload(a: dict, disabled_types: set, *, include_body: bool = True)
             "is_research": bool(a.get("is_research", False)),
             "tier": a.get("tier", "raw"),
             "score": a.get("score"),
+            "key_links": a.get("key_links", []),
         })
         if a.get("source_type") in disabled_types:
             payload["source_type"] = None
@@ -252,18 +253,44 @@ async def get_feed_article(
 
 @router.get("/feed")
 async def get_feed(
-    tag: str = Query(None),
+    tag: str = Query(None, description="Topic name(s), comma-separated for multiple"),
     page: int = Query(1, ge=1),
     view: Literal["list", "detail"] = Query("list"),
     user_id: str = Depends(get_current_user_id),
 ):
+    # Require explicit topic selection - no "All" feed
+    if not tag:
+        raise HTTPException(
+            status_code=400,
+            detail="Please select one or multiple topics. Example: ?tag=Frontend or ?tag=Frontend,AI/ML"
+        )
+    
     include_body = view == "detail"
     disabled_types = _disabled_citation_types(user_id)
+    
+    # Parse comma-separated tags
+    requested_tags = [t.strip() for t in tag.split(",")]
 
     if settings.KB_FEED:
-        return _kb_feed_page(user_id, tag, page, disabled_types, include_body=include_body)
+        # Single topic: return existing format
+        if len(requested_tags) == 1:
+            return _kb_feed_page(user_id, requested_tags[0], page, disabled_types, include_body=include_body)
+        
+        # Multiple topics: return grouped format
+        feeds = []
+        for topic_name in requested_tags:
+            page_data = _kb_feed_page(user_id, topic_name, page, disabled_types, include_body=include_body)
+            feeds.append({
+                "topic": topic_name,
+                "articles": page_data["articles"],
+                "has_next": page_data["has_next"],
+            })
+        return {"feeds": feeds, "page": page}
 
     if settings.DISCOVERY_V2:
+        # For DISCOVERY_V2, handle single topic only
+        if len(requested_tags) > 1:
+            raise HTTPException(status_code=400, detail="Multiple topics not supported in DISCOVERY_V2 mode")
         query = (
             supabase.table("articles")
             .select("*")
@@ -271,8 +298,8 @@ async def get_feed(
             .order("fetched_at", desc=True)
             .limit(10)
         )
-        if tag:
-            query = query.eq("topic", tag)
+        if requested_tags[0]:
+            query = query.eq("topic", requested_tags[0])
         result = query.execute()
         articles_data = result.data or []
         articles = [
@@ -285,9 +312,13 @@ async def get_feed(
     if not followed_ids:
         return {"articles": [], "page": page, "has_next": False}
 
+    # Legacy mode - single topic only
+    if len(requested_tags) > 1:
+        raise HTTPException(status_code=400, detail="Multiple topics not supported in legacy mode")
+    
     tag_id_filter = None
-    if tag:
-        tag_res = supabase.table("interest_tags").select("id").eq("name", tag).maybe_single().execute()
+    if requested_tags[0]:
+        tag_res = supabase.table("interest_tags").select("id").eq("name", requested_tags[0]).maybe_single().execute()
         if not tag_res.data:
             raise HTTPException(status_code=404, detail="Unknown tag")
         tag_id_filter = tag_res.data["id"]

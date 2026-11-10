@@ -26,6 +26,7 @@ interface ArticleCardProps {
   body?: string | null
   url?: string | null
   citations: Citation[]
+  keyLinks?: { title: string; url: string }[]
   youtubeUrl?: string | null
   publishedAt?: string | null
   readingMinutes?: number | null
@@ -113,6 +114,7 @@ export default function ArticleCard({
   body,
   url,
   citations,
+  keyLinks,
   youtubeUrl,
   publishedAt,
   readingMinutes,
@@ -332,6 +334,32 @@ export default function ArticleCard({
           <p className="text-xs kite-text-secondary mt-2">
             Full AI summary is still being prepared. Showing best available excerpt.
           </p>
+        )}
+
+        {expanded && keyLinks && keyLinks.length > 0 && (
+          <div className="mt-3 pt-2 border-t border-[var(--kite-border)]">
+            <span className="text-xs font-semibold kite-text-muted">Key Links</span>
+            <ul className="mt-1 space-y-1">
+              {keyLinks.map((link, i) => {
+                const linkUrl = normalizeExternalUrl(link.url)
+                if (!linkUrl) return null
+                return (
+                  <li key={i}>
+                    <a
+                      href={linkUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[var(--kite-accent)] hover:underline inline-flex items-center gap-1"
+                      onClick={(e) => followExternalLink(e, linkUrl)}
+                    >
+                      <span>→</span>
+                      <span>{link.title || link.url}</span>
+                    </a>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
         )}
 
         <div className="kite-article-footer">
