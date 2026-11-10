@@ -1,8 +1,16 @@
+import logging
+
 import resend
 
 from app.config import settings
 
-resend.api_key = settings.EMAIL_API_KEY
+logger = logging.getLogger(__name__)
+
+# Only set API key if configured
+if settings.EMAIL_API_KEY:
+    resend.api_key = settings.EMAIL_API_KEY
+else:
+    logger.warning("Email disabled: EMAIL_API_KEY not set")
 
 
 def _build_html_digest(items: list) -> str:
@@ -44,7 +52,12 @@ def _build_html_digest(items: list) -> str:
 </html>"""
 
 
-async def send_digest(user_email: str, items: list) -> dict:
+async def send_digest(user_email: str, items: list) -> dict | None:
+    """Send email digest. Returns None if EMAIL_API_KEY not configured."""
+    if not settings.EMAIL_API_KEY:
+        logger.info("Skipping email to %s: EMAIL_API_KEY not configured", user_email)
+        return None
+    
     html = _build_html_digest(items)
     params = {
         "from": settings.EMAIL_FROM,

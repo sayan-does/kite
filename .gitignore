@@ -39,5 +39,16 @@ supabase
 stitch-exports
 plans
 docs
+!docs/*.md
 skills
 .vercel
+deploy/render.env
+deploy/vercel.env
+deploy/github-secrets.env
+!deploy/fetch-supabase-env.ps1
+!deploy/UPLOAD.txt
+
+# cluade , deploy , vscode 
+deploy/
+.claude/
+render.yaml

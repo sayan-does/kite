@@ -1,0 +1,44 @@
+# Triggers the full daily job (discovery, dependency checks, digests).
+# Used with Render (ENABLE_SCHEDULER=false) so the API can sleep between requests.
+name: Daily scheduler
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  run-daily:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger POST /internal/run-daily
+        env:
+          API_BASE_URL: ${{ secrets.KITE_API_BASE_URL }}
+          INTERNAL_SECRET: ${{ secrets.INTERNAL_TRIGGER_SECRET }}
+        run: |
+          if [ -z "$API_BASE_URL" ] || [ -z "$INTERNAL_SECRET" ]; then
+            echo "ERROR: Missing required secrets KITE_API_BASE_URL or INTERNAL_TRIGGER_SECRET"
+            exit 1
+          fi
+          API_BASE_URL="${API_BASE_URL%/}"
+          echo "Calling ${API_BASE_URL}/internal/run-daily"
+          
+          # Capture response and HTTP status
+          HTTP_RESPONSE=$(curl -w "\n%{http_code}" -X POST "${API_BASE_URL}/internal/run-daily" \
+            -H "X-Internal-Secret: ${INTERNAL_SECRET}" \
+            -H "Content-Type: application/json")
+          
+          HTTP_BODY=$(echo "$HTTP_RESPONSE" | head -n -1)
+          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -n 1)
+          
+          echo "Response body: $HTTP_BODY"
+          echo "HTTP status: $HTTP_STATUS"
+          
+          # Fail if non-2xx status
+          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
+            echo "ERROR: Daily job failed with HTTP $HTTP_STATUS"
+            exit 1
+          fi
+          
+          echo "Daily job completed successfully."
+

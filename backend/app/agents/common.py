@@ -1,15 +1,25 @@
 import asyncio
 import logging
 
-from langchain_groq import ChatGroq
-
 from app.config import settings
 
 logger = logging.getLogger(__name__)
-groq_client = ChatGroq(model=settings.GROQ_MODEL, api_key=settings.GROQ_API_KEY)
+
+# Initialize Groq client only if API key is available
+groq_client = None
+if settings.GROQ_API_KEY:
+    from langchain_groq import ChatGroq
+    groq_client = ChatGroq(model=settings.GROQ_MODEL, api_key=settings.GROQ_API_KEY)
+else:
+    logger.warning("GROQ_API_KEY not set - LLM features disabled")
 
 
 async def search(query: str) -> list[dict]:
+    # Check if SEARX_URL is configured
+    if not settings.SEARX_URL:
+        logger.info("Search backfill disabled: SEARX_URL not set")
+        return []
+    
     results = await _search_searxng(query)
     if results:
         return results
@@ -20,6 +30,9 @@ async def search(query: str) -> list[dict]:
 async def _search_searxng(query: str) -> list[dict] | None:
     import httpx
 
+    if not settings.SEARX_URL:
+        return None
+    
     searx_url = settings.SEARX_URL.rstrip("/")
     params = {"q": query, "format": "json", "language": "en", "categories": "news"}
     try:

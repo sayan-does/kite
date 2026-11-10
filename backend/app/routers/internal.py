@@ -54,12 +54,20 @@ async def trigger_run_daily(
     """External cron entrypoint so hosts that sleep can still run the daily job."""
     _check_secret(x_internal_secret)
 
-    async def _run():
-        try:
-            await run_daily()
-            logger.info("run_daily complete")
-        except Exception:
-            logger.exception("run_daily failed")
-
-    asyncio.create_task(_run())
-    return {"ok": True, "started": True}
+    try:
+        # Run synchronously with 90-minute timeout
+        result = await asyncio.wait_for(run_daily(), timeout=5400)
+        logger.info("run_daily complete: %s", result)
+        return {"ok": True, "started": True, "result": result}
+    except asyncio.TimeoutError:
+        logger.error("run_daily timed out after 90 minutes")
+        raise HTTPException(
+            status_code=504,
+            detail="Daily job exceeded 90 minute timeout"
+        )
+    except Exception as e:
+        logger.exception("run_daily failed")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Daily job failed: {str(e)}"
+        )

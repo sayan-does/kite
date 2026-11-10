@@ -105,6 +105,7 @@ async def search_youtube(query: str, max_results: int = _MAX_CANDIDATES) -> list
     """Search YouTube Data API and return raw item dicts."""
     api_key = settings.YOUTUBE_API_KEY
     if not api_key or api_key in ("placeholder", ""):
+        logger.info("YouTube search skipped: YOUTUBE_API_KEY not set")
         return []
 
     normalized = _normalize_query(query)
@@ -123,6 +124,10 @@ async def search_youtube(query: str, max_results: int = _MAX_CANDIDATES) -> list
             resp = await client.get("https://www.googleapis.com/youtube/v3/search", params=params)
             if resp.status_code == 200:
                 return resp.json().get("items", [])
+            elif resp.status_code == 403:
+                # Quota exceeded
+                logger.warning("YouTube API quota exceeded")
+                return []
     except Exception as exc:
         logger.warning("YouTube search failed for %r: %s", normalized, exc)
 
