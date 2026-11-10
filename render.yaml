@@ -6,11 +6,12 @@ services:
     dockerContext: ./backend
     healthCheckPath: /health
     numInstances: 1
-    # Starter/standard: keep one instance. Do not scale horizontally —
-    # APScheduler and the in-memory rate limiter are per-process.
+    # Free tier sleeps after inactivity. Daily job runs via GitHub Actions (see README).
     envVars:
       - key: PREFILL_ON_STARTUP
         value: "false"
       - key: ENABLE_SCHEDULER
-        value: "true"
-    # Set remaining secrets in the Render dashboard (see docs/deploy.md).
+        value: "false"
+    # Set remaining secrets in the Render dashboard (see backend/.env.example):
+    # SUPABASE_*, GROQ_API_KEY, YOUTUBE_API_KEY, EMAIL_API_KEY, SEARX_URL,
+    # CORS_ORIGINS, INTERNAL_TRIGGER_SECRET, and optional feature flags.
