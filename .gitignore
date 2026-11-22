@@ -34,7 +34,7 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 
-e2e
+e2e/node_modules/
 supabase
 stitch-exports
 plans
