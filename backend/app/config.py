@@ -68,6 +68,9 @@ class Settings:
     SEARX_URL: str = os.environ.get("SEARX_URL", "")
     
     CORS_ORIGINS: list[str] = parse_cors_origins(os.environ.get("CORS_ORIGINS"))
+    # Optional regex for dynamic origins (e.g. Vercel preview URLs), such as
+    # ^https://kite-[a-z0-9-]+-<team>\.vercel\.app$
+    CORS_ORIGIN_REGEX: str | None = (os.environ.get("CORS_ORIGIN_REGEX") or "").strip() or None
     ENABLE_SCHEDULER: bool = env_bool("ENABLE_SCHEDULER", "true")
     # Groq retired llama-3.3-70b-versatile on 2026-08-16; keep the model overridable.
     GROQ_MODEL: str = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
