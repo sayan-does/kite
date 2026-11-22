@@ -1,0 +1,109 @@
+# LEVEL 2 - Preview environment per pull request.
+# Builds the frontend, deploys it to a unique Vercel preview URL pointed at the STAGING API,
+# then runs API smoke + Playwright E2E against that live preview.
+#
+# Required repo secrets:   VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+# Required repo variables: STAGING_API_URL   (public base URL of the staging backend, no trailing slash)
+# For E2E (set vars.E2E_ENABLED=true once a STAGING Supabase project exists):
+#   secrets: E2E_SUPABASE_URL, E2E_SUPABASE_ANON_KEY, E2E_SUPABASE_SERVICE_ROLE_KEY
+# Optional secret: VERCEL_PROTECTION_BYPASS (Vercel "Protection Bypass for Automation")
+name: Preview
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  preview:
+    name: Deploy preview + verify
+    needs: ci
+    # Secrets are not exposed to forks, so only run for same-repo PRs.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Pull Vercel project settings
+        run: vercel pull --yes --environment=preview --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: Build
+        run: vercel build --token="${{ secrets.VERCEL_TOKEN }}"
+        env:
+          VITE_API_BASE_URL: ${{ vars.STAGING_API_URL }}
+
+      - name: Deploy preview
+        id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt --token="${{ secrets.VERCEL_TOKEN }}")
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
+          echo "Preview: ${url}"
+
+      - name: Wait for staging API
+        run: bash scripts/ci/wait-for-health.sh "${{ vars.STAGING_API_URL }}/health"
+
+      - name: API smoke (incl. CORS for this preview origin)
+        run: bash scripts/ci/api-smoke.sh "${{ vars.STAGING_API_URL }}" "${{ steps.deploy.outputs.url }}"
+
+      - name: Install E2E dependencies
+        if: vars.E2E_ENABLED == 'true'
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Playwright E2E against preview
+        if: vars.E2E_ENABLED == 'true'
+        working-directory: e2e
+        run: npx playwright test
+        env:
+          CI: "true"
+          PLAYWRIGHT_BASE_URL: ${{ steps.deploy.outputs.url }}
+          PLAYWRIGHT_API_BASE: ${{ vars.STAGING_API_URL }}
+          VERCEL_PROTECTION_BYPASS: ${{ secrets.VERCEL_PROTECTION_BYPASS }}
+          SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_SUPABASE_SERVICE_ROLE_KEY }}
+
+      - uses: actions/upload-artifact@v4
+        if: always() && vars.E2E_ENABLED == 'true'
+        with:
+          name: preview-e2e-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 7
+
+      - name: Comment preview URL on the PR
+        if: always() && steps.deploy.outputs.url != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- kite-preview -->';
+            const body = `${marker}\n**Preview:** ${{ steps.deploy.outputs.url }}\n**Status:** ${{ job.status }} (API smoke${{ vars.E2E_ENABLED == 'true' && ' + E2E' || '' }}) at ${context.sha.slice(0, 7)}`;
+            const { data: comments } = await github.rest.issues.listComments({ ...context.repo, issue_number: context.issue.number });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) await github.rest.issues.updateComment({ ...context.repo, comment_id: existing.id, body });
+            else await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });

@@ -1,0 +1,136 @@
+# LEVEL 5 - Nightly deep verification (catches drift that PR checks cannot):
+#   * backend integration tests against a STAGING Supabase
+#   * full authenticated Playwright E2E against the STAGING stack
+#   * read-only smoke against PRODUCTION
+# Opens (or updates) one issue when anything fails.
+#
+# Variables: STAGING_API_URL, STAGING_FRONTEND_URL, PROD_API_URL, PROD_FRONTEND_URL, E2E_ENABLED=true
+# Secrets:   STAGING_* below. NEVER point these at production data: the suites create and delete rows.
+name: Nightly
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  backend-integration:
+    name: Backend integration tests (staging DB)
+    if: vars.E2E_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_JWT_SECRET: ${{ secrets.E2E_SUPABASE_JWT_SECRET }}
+      SUPABASE_DB_URL: ${{ secrets.E2E_SUPABASE_DB_URL }}
+      GROQ_API_KEY: test
+      YOUTUBE_API_KEY: test
+      EMAIL_API_KEY: test
+      SEARX_URL: https://searx.example
+      PREFILL_ON_STARTUP: "false"
+      ENABLE_SCHEDULER: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+      - run: pytest -q --junitxml=pytest-full.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nightly-backend-pytest
+          path: backend/pytest-full.xml
+          retention-days: 14
+
+  staging-e2e:
+    name: Full Playwright E2E (staging)
+    if: vars.E2E_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Wait for staging API (cold start)
+        run: bash scripts/ci/wait-for-health.sh "${{ vars.STAGING_API_URL }}/health"
+      - working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Run full suite
+        working-directory: e2e
+        run: npx playwright test
+        env:
+          CI: "true"
+          PLAYWRIGHT_BASE_URL: ${{ vars.STAGING_FRONTEND_URL }}
+          PLAYWRIGHT_API_BASE: ${{ vars.STAGING_API_URL }}
+          VERCEL_PROTECTION_BYPASS: ${{ secrets.VERCEL_PROTECTION_BYPASS }}
+          SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_SUPABASE_SERVICE_ROLE_KEY }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nightly-e2e-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 14
+
+  production-smoke:
+    name: Production smoke (read-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for production API (cold start)
+        run: bash scripts/ci/wait-for-health.sh "${{ vars.PROD_API_URL }}/health"
+      - run: bash scripts/ci/api-smoke.sh "${{ vars.PROD_API_URL }}" "${{ vars.PROD_FRONTEND_URL }}"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - working-directory: e2e
+        run: npx playwright test -c playwright.smoke.config.ts
+        env:
+          CI: "true"
+          PLAYWRIGHT_BASE_URL: ${{ vars.PROD_FRONTEND_URL }}
+          PLAYWRIGHT_API_BASE: ${{ vars.PROD_API_URL }}
+          VERCEL_PROTECTION_BYPASS: ${{ secrets.VERCEL_PROTECTION_BYPASS }}
+
+  report:
+    name: Report failures
+    needs: [backend-integration, staging-e2e, production-smoke]
+    if: always() && (contains(needs.*.result, 'failure'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update the nightly-failure issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Nightly verification failing"
+          existing=$(gh issue list --repo "${{ github.repository }}" --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          body="Nightly run failed: ${RUN_URL}"
+          if [ -n "$existing" ]; then gh issue comment "$existing" --repo "${{ github.repository }}" --body "$body"
+          else gh issue create --repo "${{ github.repository }}" --title "$title" --body "$body"; fi

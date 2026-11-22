@@ -1,0 +1,141 @@
+# LEVEL 3/4 - Production delivery from main.
+#   CI gate -> [manual approval: "production" environment] -> backend (Render) -> frontend (Vercel)
+#   -> post-deploy smoke -> automatic rollback of both if smoke fails.
+#
+# Setup (GitHub -> Settings):
+#   Environments: create "production" and add Required reviewers (this is the approval gate).
+#   Secrets:   RENDER_API_KEY, VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+#              (optional) VERCEL_PROTECTION_BYPASS
+#   Variables: RENDER_SERVICE_ID, PROD_API_URL, PROD_FRONTEND_URL   (URLs without trailing slash)
+# Render must have autoDeploy OFF for the production service so only this pipeline deploys it.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false # never interrupt a deploy half way
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy-backend:
+    name: Deploy backend (Render)
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    outputs:
+      previous_deploy_id: ${{ steps.deploy.outputs.previous_deploy_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trigger deploy, wait until live, health-check
+        id: deploy
+        run: bash scripts/ci/render-deploy.sh deploy
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+          API_URL: ${{ vars.PROD_API_URL }}
+
+  deploy-frontend:
+    name: Deploy frontend (Vercel)
+    needs: deploy-backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm i -g vercel@latest
+      - run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
+      - run: vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
+        env:
+          VITE_API_BASE_URL: ${{ vars.PROD_API_URL }}
+      - run: vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}"
+
+  smoke:
+    name: Post-deploy smoke
+    needs: [deploy-backend, deploy-frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: API smoke (incl. CORS for the production frontend)
+        run: bash scripts/ci/api-smoke.sh "${{ vars.PROD_API_URL }}" "${{ vars.PROD_FRONTEND_URL }}"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Read-only browser smoke (desktop + mobile)
+        working-directory: e2e
+        run: npx playwright test -c playwright.smoke.config.ts
+        env:
+          CI: "true"
+          PLAYWRIGHT_BASE_URL: ${{ vars.PROD_FRONTEND_URL }}
+          PLAYWRIGHT_API_BASE: ${{ vars.PROD_API_URL }}
+          VERCEL_PROTECTION_BYPASS: ${{ secrets.VERCEL_PROTECTION_BYPASS }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prod-smoke-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 14
+
+  rollback:
+    name: Roll back production
+    needs: [deploy-backend, deploy-frontend, smoke]
+    # Only when something shipped and then failed verification.
+    if: always() && needs.deploy-backend.result == 'success' && (needs.smoke.result == 'failure' || needs.deploy-frontend.result == 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Deliberately no environment gate: a rollback must not wait for a second approval.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Roll back backend to the previously live Render deploy
+        if: needs.deploy-backend.outputs.previous_deploy_id != ''
+        run: bash scripts/ci/render-deploy.sh rollback "${{ needs.deploy-backend.outputs.previous_deploy_id }}"
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+          API_URL: ${{ vars.PROD_API_URL }}
+      - uses: actions/setup-node@v4
+        if: needs.deploy-frontend.result == 'success'
+        with:
+          node-version: 22
+      - name: Roll back frontend to the previous production deployment
+        if: needs.deploy-frontend.result == 'success'
+        run: |
+          npm i -g vercel@latest
+          vercel rollback --yes --token="${{ secrets.VERCEL_TOKEN }}"
+      - name: Open an incident issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --repo "${{ github.repository }}" \
+            --title "Production deploy of ${GITHUB_SHA::7} failed verification and was rolled back" \
+            --label "incident" \
+            --body "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+          || gh issue create --repo "${{ github.repository }}" \
+            --title "Production deploy of ${GITHUB_SHA::7} failed verification and was rolled back" \
+            --body "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
